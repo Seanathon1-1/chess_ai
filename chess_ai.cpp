@@ -49,6 +49,7 @@ int main()
 	Game* game = new Game();
 	game->init(&game_board, 0);
 	game->printBoard();
+	game->play();
 	delete game;
 	return 0;
 }

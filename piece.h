@@ -10,7 +10,8 @@ public:
 	Piece(int f, int r, bool c) : file(f), rank(r), color(c) {}
 	inline uint8_t getRank() { return rank; }
 	inline uint8_t getFile() { return file; }
-	inline uint8_t getBoardRep() { return board_rep; }
+	inline char getBoardRep() { return board_rep; }
+	inline bool getColor() { return color; }
 };
 
 struct Rook : Piece {
@@ -18,6 +19,9 @@ struct Rook : Piece {
 };
 
 struct Pawn : Piece {
+private:
+	bool has_power = 1;
+public:
 	Pawn(int f, int r, int c) : Piece(f, r, c) { board_rep = '^'; }
 };
 

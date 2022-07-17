@@ -18,7 +18,13 @@ void Game::play() {
 	size_t loc = possible_moves.find(move[0]);
 	if (loc != string::npos) {
 		if (loc < 8) {
-			 
+			for (auto& piece : *curr_state.board) {
+				if (piece->getBoardRep() == '^') {
+					if (piece->getFile() == loc && piece->getColor() == curr_state.whose_turn) {
+						cout << "Found the piece\n";	
+					}
+				}
+			}
 		}
 	}
 
@@ -32,7 +38,7 @@ void Game::printBoard() {
 		uint8_t piece_rank = piece->getRank();
 		uint8_t piece_file = piece->getFile();
 		squares[piece_rank * 8 + piece_file] = piece->getBoardRep();
-		cout << typeid(*piece).name() << endl;
+		cout << piece->getBoardRep() << endl;
 	}
 
 	cerr << "|---|---|---|---|---|---|---|---|\n";
