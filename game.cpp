@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void Game::init(vector<unique_ptr<Piece>>* board, bool turn) {
+void Game::init(vector<Piece*>* board, bool turn) {
 	curr_state.board = board;
 	curr_state.whose_turn = turn;
 }
@@ -14,21 +14,48 @@ void Game::play() {
 	cin >> move;
 
 	// Is move legal?
-	string possible_moves = "abcdefghRNBQK";
-	size_t loc = possible_moves.find(move[0]);
-	if (loc != string::npos) {
-		if (loc < 8) {
+	switch (move[0]) {
+	case 'R':
+		// Rook move
+		break;
+	case 'N':
+		// Knight move
+		break;
+	case 'B':
+		// Bishop move
+		break;
+	case 'Q':
+		// Queen move
+		break;
+	case 'K':
+		// King move
+		break;
+	default:
+		// Pawn move or illegal
+		if (move[0] >= 'a' && move[0] <= 'h') {
+			// Pawn move
+			uint8_t file = move[0] - 'a';
 			for (auto& piece : *curr_state.board) {
-				if (piece->getBoardRep() == '^') {
-					if (piece->getFile() == loc && piece->getColor() == curr_state.whose_turn) {
-						cout << "Found the piece\n";	
+				if (typeid(*piece) == typeid(Pawn) && piece->getColor() == curr_state.whose_turn && file == piece->getFile()) {
+					int target_rank = stoi(move.substr(1)) - 1;
+					int curr_rank = piece->getRank();
+					int max_move = 1 + ((Pawn*)piece)->has_power;
+					int move_dist = (target_rank - curr_rank) * piece->getColor();
+					if ( move_dist > max_move || move_dist <= 0) {
+						cout << "Invalid move; Try again" << endl;
+						return;
 					}
+					piece->rank = target_rank;
 				}
 			}
+		}
+		else {
+			cout << "Invalid move; Try again" << endl;
 		}
 	}
 
 	// Make move
+	curr_state.whose_turn *= -1;
 }
 
 void Game::printBoard() {
@@ -38,7 +65,6 @@ void Game::printBoard() {
 		uint8_t piece_rank = piece->getRank();
 		uint8_t piece_file = piece->getFile();
 		squares[piece_rank * 8 + piece_file] = piece->getBoardRep();
-		cout << piece->getBoardRep() << endl;
 	}
 
 	cerr << "|---|---|---|---|---|---|---|---|\n";
