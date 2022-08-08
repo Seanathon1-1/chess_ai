@@ -2,9 +2,3 @@
 // or project specific include files.
 
 #pragma once
-
-#include <iostream>
-#include <vector>
-#include <memory>
-#include "game.h"
-#include "piece.h"
