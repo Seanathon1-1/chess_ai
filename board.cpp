@@ -147,10 +147,31 @@ void Board::play() {
 		if (selected.kind == pawn && (abs(dr - sr) == 2)) (selected.color == white) ? white_en_passant = sf : black_en_passant = sf;
 		if (selected.kind == king) (selected.color == white) ? white_king = BIDX(df, dr) : black_king = BIDX(df, dr);
 		
+		// Makes the move and changes whose turn it is
 		makeMove(selected, select_idx, dest_idx);
 
 		// Look for checkmate/stalemate
-		
+		vector<int> nextPlayerMoves;
+		allLegalMoves(&nextPlayerMoves, whose_turn);
+		if (nextPlayerMoves.size() == 0) {
+			print_threatmap(white_threat_map);
+			printBoard();
+			// Checkmate
+			if (whose_turn == white && white_check) {
+				cout << "0-1" << endl;
+				return;
+			}
+			else if (whose_turn == black && black_check) {
+				cout << "1-0" << endl;
+				return;
+			}
+
+			// Stalemate
+			else {
+				cout << ".5-.5" << endl;
+				return;
+			}
+		}
 	}
 }
 
@@ -176,16 +197,26 @@ void Board::makeMove(Piece p, int s, int d) {
 
 	// Look for check
 	updateThreatMaps();
-	if (p.color == white) black_check = XTRC_BIT(white_threat_map, black_king);
-	else white_check = XTRC_BIT(black_threat_map, white_king);
+	black_check = XTRC_BIT(white_threat_map, black_king);
+	white_check = XTRC_BIT(black_threat_map, white_king);
 
 	// Other player's turn
 	if (whose_turn == white) whose_turn = black;
 	else whose_turn = white;
 }
 
+void Board::allLegalMoves(vector<int>* moves, Color c) {
+	for (int i = 0; i < 64; i++) {
+		if (board[i].color == c) {
+			legalPieceMoves(moves, board[i], i % 8, i / 8);
+		}
+	}
+}
+
 void Board::legalPieceMoves(vector<int>* moves, Piece p, int file, int rank) {
 	int square; int f;
+
+	vector<int> possible_moves;
 
 	if (p.kind == pawn) {
 		int home_rank = (p.color == white) ? 1 : 6;
@@ -194,12 +225,12 @@ void Board::legalPieceMoves(vector<int>* moves, Piece p, int file, int rank) {
 		// normal move
 		square = BIDX(file, rank + (1 * p.color));
 		if (board[square].kind == open) {
-			moves->push_back(square);
+			possible_moves.push_back(square);
 		}
 		// pawn power
 		square = BIDX(file, rank + (2 * p.color));
 		if (rank == home_rank && board[square].kind == open) {
-			moves->push_back(square);
+			possible_moves.push_back(square);
 		}
 
 		// captures
@@ -208,35 +239,36 @@ void Board::legalPieceMoves(vector<int>* moves, Piece p, int file, int rank) {
 		// en passant
 		if (rank == passant_rank) {
 			f = (p.color == white) ? black_en_passant : white_en_passant;
-			if (f == file - 1) moves->push_back(BIDX(f, rank + (1 * p.color)));
-			if (f == file + 1) moves->push_back(BIDX(f, rank + (1 * p.color)));
+			if (f == file - 1) possible_moves.push_back(BIDX(f, rank + (1 * p.color)));
+			if (f == file + 1) possible_moves.push_back(BIDX(f, rank + (1 * p.color)));
 		}
 	}
 
 	if (p.kind == knight) {
-		knightSights(moves, file, rank, p.color);
+		knightSights(&possible_moves, file, rank, p.color);
 	}
 
 	if (p.kind == bishop || p.kind == queen) {
-		bishopSights(moves, file, rank, p.color);
+		bishopSights(&possible_moves, file, rank, p.color);
 	}
 
 	if (p.kind == rook || p.kind == queen) {
-		rookSights(moves, file, rank, p.color);
+		rookSights(&possible_moves, file, rank, p.color);
 	}
 
 	if (p.kind == king) {
-		kingSights(moves, file, rank, p.color);
+		kingSights(&possible_moves, file, rank, p.color);
+		// TODO: castling
 	}
 
 	// Look to see if move leaves player's king in check
-	Board test_move; 
+	Board test_move;
 	int source = BIDX(file, rank);
-	for (auto iter = moves->begin(); iter != moves->end(); iter++) {
+	for (auto iter = possible_moves.begin(); iter != possible_moves.end(); iter++) {
 		test_move = Board(this);
 		test_move.makeMove(p, source, *iter);
-		if (p.color == white && test_move.white_check) moves->erase(iter--);
-		if (p.color == black && test_move.black_check) moves->erase(iter--);
+		if ((p.color == white && test_move.white_check) || (p.color == black && test_move.black_check)) continue;
+		moves->push_back(*iter);
 	}
 }
 
