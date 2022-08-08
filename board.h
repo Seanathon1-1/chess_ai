@@ -27,7 +27,8 @@ private:
 	int white_en_passant = -1;
 	int black_en_passant = -1;
 
-	void legalMoves(std::vector<int>*, Piece, int, int);
+	void allLegalMoves(std::vector<int>*, Color);
+	void legalPieceMoves(std::vector<int>*, Piece, int, int);
 	void updateThreatMaps();
 	void printBoard();
 	void pawnSights(std::vector<int>*, int, int, Color, bool threat = false);

@@ -133,7 +133,7 @@ void Board::play() {
 		dest_idx = BIDX(df, dr);
 		destination = board[dest_idx];
 		vector<int> moves_possible;
-		legalMoves(&moves_possible, selected, sf, sr);
+		legalPieceMoves(&moves_possible, selected, sf, sr);
 		bool move_exists = 0;
 		for (int move : moves_possible) if (move == dest_idx) { move_exists = 1; break; }
 		if (!move_exists) {
@@ -184,8 +184,7 @@ void Board::makeMove(Piece p, int s, int d) {
 	else whose_turn = white;
 }
 
-void Board::legalMoves(vector<int>* moves, Piece p, int file, int rank) {
-	moves->clear();
+void Board::legalPieceMoves(vector<int>* moves, Piece p, int file, int rank) {
 	int square; int f;
 
 	if (p.kind == pawn) {
