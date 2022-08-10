@@ -27,6 +27,12 @@ private:
 	int white_en_passant = -1;
 	int black_en_passant = -1;
 
+	// castling availability
+	bool white_short_castle = 1;
+	bool black_short_castle = 1;
+	bool white_long_castle  = 1;
+	bool black_long_castle  = 1;
+
 	void allLegalMoves(std::vector<int>*, Color);
 	void legalPieceMoves(std::vector<int>*, Piece, int, int);
 	void updateThreatMaps();

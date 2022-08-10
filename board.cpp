@@ -79,18 +79,6 @@ void Board::play() {
 		cout << "Enter move...:";
 		cin >> move;
 
-		// Castling
-		if (!move.compare("O-O")) {
-			// Short castle
-			cout << "Short castle not yet implemented\n";
-			continue;
-		}
-		if (!move.compare("O-O-O")) {
-			// Long castle
-			cout << "Long castle not yet implemented\n";
-			continue;
-		}
-
 		// Moves should only be 4 characters long
 		if (move.length() != 4) {
 			cout << "Could not understand move, please enter a move like e2e4.\n";
@@ -195,10 +183,56 @@ void Board::makeMove(Piece p, int s, int d) {
 	board[d] = p;
 	board[s] = empty_sqr;
 
+	// Extra move on castle
+	if (p.kind == king && abs((s % 8) - (d % 8)) == 2) {
+		if (p.color == white) {
+			if (d % 8 == 6) {
+				board[BIDX(5, 0)] = board[BIDX(7, 0)];
+				board[BIDX(7, 0)] = empty_sqr;
+			}
+			if (d % 8 == 2) {
+				board[BIDX(3, 0)] = board[BIDX(0, 0)];
+				board[BIDX(0, 0)] = empty_sqr;
+			}
+		}
+		if (p.color == black) {
+			if (d % 8 == 6) {
+				board[BIDX(5, 7)] = board[BIDX(7, 7)];
+				board[BIDX(7, 7)] = empty_sqr;
+			}
+			if (d % 8 == 2) {
+				board[BIDX(3, 7)] = board[BIDX(0, 7)];
+				board[BIDX(0, 7)] = empty_sqr;
+			}
+		}
+	}
+
 	// Look for check
 	updateThreatMaps();
 	black_check = XTRC_BIT(white_threat_map, black_king);
 	white_check = XTRC_BIT(black_threat_map, white_king);
+
+	// Enforce castling restrictions
+	if (p.kind == king) {
+		if (p.color == white) {
+			white_short_castle = 0;
+			white_long_castle  = 0;
+		}
+		if (p.color == black) {
+			black_short_castle = 0;
+			black_long_castle  = 0;
+		}
+	}
+	if (p.kind == rook) {
+		if (p.color == white) {
+			if (s % 8 == 7) white_short_castle = 0;
+			if (s % 8 == 0) white_long_castle  = 0;
+		}
+		if (p.color == black) {
+			if (s % 8 == 7) black_short_castle = 0;
+			if (s % 8 == 0) black_long_castle  = 0;
+		}
+	}
 
 	// Other player's turn
 	if (whose_turn == white) whose_turn = black;
@@ -258,7 +292,14 @@ void Board::legalPieceMoves(vector<int>* moves, Piece p, int file, int rank) {
 
 	if (p.kind == king) {
 		kingSights(&possible_moves, file, rank, p.color);
-		// TODO: castling
+		if (p.color == white) {
+			if (white_short_castle) possible_moves.push_back(BIDX(6, 0));
+			if (white_long_castle)  possible_moves.push_back(BIDX(2, 0));
+		}
+		if (p.color == black) {
+			if (black_short_castle) possible_moves.push_back(BIDX(6, 7));
+			if (black_long_castle)  possible_moves.push_back(BIDX(2, 7));
+		}
 	}
 
 	// Look to see if move leaves player's king in check
