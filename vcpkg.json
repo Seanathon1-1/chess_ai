@@ -1,0 +1,5 @@
+{
+  "name": "imguiexample",
+  "version": "1.0",
+  "dependencies": [ "glad", "imgui", "glfw3" ]
+}
