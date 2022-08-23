@@ -13,8 +13,8 @@ if (CMAKE_VERSION VERSION_GREATER 3.12)
 endif()
 
 # TODO: Add tests and install targets if needed.
-find_package(glad CONFIG REQUIRED)
-target_link_libraries(chess_ai PRIVATE glad::glad)
+find_package(GLEW CONFIG REQUIRED)
+target_link_libraries(chess_ai PRIVATE GLEW::GLEW)
 
 find_package(glfw3 CONFIG REQUIRED)
 target_link_libraries(chess_ai PRIVATE glfw)
