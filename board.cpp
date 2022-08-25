@@ -1,8 +1,8 @@
 #include "board.h"
 #include <cctype>
 
-#define ON_BOARD(v) ((0 <= v && v <= 7) ? 1 : 0)
-#define BIDX(f,r) ((r)*8+f)
+#define ON_BOARD(v) ((0 <= (v) && (v) <= 7) ? 1 : 0)
+#define BIDX(f,r) ((r)*8+(f))
 #define XTRC_BIT(map, bit) ((map >> bit) & 1ULL)
 
 #define HORZ_LINE "|---|---|---|---|---|---|---|---|\n"
@@ -66,23 +66,23 @@ Board::Board(Board* base) {
 	black_en_passant = base->black_en_passant;
 }
 
-void Board::play() {
-	string move;
+void Board::playMove(string move) {
+	//string move;
 	Piece selected;
 	Piece destination;
 	int sf; int sr; int df; int dr;
 	int select_idx; int dest_idx;
 
-	while (1) {
-		cout << ((whose_turn == white) ? "White's " : "Black's ") << "turn:\n";
-		printBoard();
-		cout << "Enter move...:";
-		cin >> move;
+	//while (1) {
+		//cout << ((whose_turn == white) ? "White's " : "Black's ") << "turn:\n";
+		//printBoard();
+		//cout << "Enter move...:";
+		//cin >> move;
 
 		// Moves should only be 4 characters long
 		if (move.length() != 4) {
 			cout << "Could not understand move, please enter a move like e2e4.\n";
-			continue;
+			return;
 		}
 
 		// Check that moves are in bounds
@@ -96,7 +96,7 @@ void Board::play() {
 				break;
 			}
 		}
-		if (skip) continue;
+		if (skip) return;
 
 		sf = move[0] - 'a';
 		sr = move[1] - '1';
@@ -108,13 +108,13 @@ void Board::play() {
 		selected = board[select_idx];
 		if (selected.kind == open) {
 			cout << "No piece selected to move.\n";
-			continue;
+			return;
 		}
 
 		// check that it is the correct player's turn
 		if (selected.color != whose_turn) {
 			cout << "Can't move other player's piece.\n";
-			continue;
+			return;
 		}
 
 		// check if the destination is a legal move
@@ -126,7 +126,7 @@ void Board::play() {
 		for (int move : moves_possible) if (move == dest_idx) { move_exists = 1; break; }
 		if (!move_exists) {
 			cout << "Move is not legal.\n";
-			continue;
+			return;
 		}
 		
 		// Check if en passant is available for next move
@@ -143,7 +143,7 @@ void Board::play() {
 		allLegalMoves(&nextPlayerMoves, whose_turn);
 		if (nextPlayerMoves.size() == 0) {
 			print_threatmap(white_threat_map);
-			printBoard();
+			//printBoard();
 			// Checkmate
 			if (whose_turn == white && white_check) {
 				cout << "0-1" << endl;
@@ -160,7 +160,7 @@ void Board::play() {
 				return;
 			}
 		}
-	}
+	//}
 }
 
 void print_threatmap(uint64_t map) {
@@ -225,12 +225,12 @@ void Board::makeMove(Piece p, int s, int d) {
 	}
 	if (p.kind == rook) {
 		if (p.color == white) {
-			if (s % 8 == 7) white_short_castle = 0;
-			if (s % 8 == 0) white_long_castle  = 0;
+			if (s % 8 == 7 && s / 8 == 0) white_short_castle = 0;
+			if (s % 8 == 0 && s / 8 == 0) white_long_castle  = 0;
 		}
 		if (p.color == black) {
-			if (s % 8 == 7) black_short_castle = 0;
-			if (s % 8 == 0) black_long_castle  = 0;
+			if (s % 8 == 7 && s / 8 == 7) black_short_castle = 0;
+			if (s % 8 == 0 && s / 8 == 7) black_long_castle  = 0;
 		}
 	}
 
@@ -473,18 +473,19 @@ void Board::kingSights(vector<int>* moves, int file, int rank, Color c, bool thr
 	}
 }
 
-void Board::printBoard() {
+void Board::printBoard(string& s) {
 	Piece p;
 	char piece_c;
-	cout << HORZ_LINE;
+	s += HORZ_LINE;
 	for (int rank = 7; rank >= 0; rank--) {
-		cout << "| ";
+		s += "| ";
 		for (int file = 0; file < 8; file++) {
 			p = board[BIDX(file, rank)];
 			piece_c = (p.color == white) ? tolower(piece_chars[p.kind]) : piece_chars[p.kind];
-			cout << piece_c;
-			cout << " | ";
+			s += piece_c;
+			s += " | ";
 		}
-		cout << "\b\n" << HORZ_LINE;
+		s += "\n";
+		s += HORZ_LINE;
 	}
 }

@@ -36,7 +36,6 @@ private:
 	void allLegalMoves(std::vector<int>*, Color);
 	void legalPieceMoves(std::vector<int>*, Piece, int, int);
 	void updateThreatMaps();
-	void printBoard();
 	void pawnSights(std::vector<int>*, int, int, Color, bool threat = false);
 	void knightSights(std::vector<int>*, int, int, Color, bool threat = false);
 	void bishopSights(std::vector<int>*, int, int, Color, bool threat = false);
@@ -47,5 +46,6 @@ private:
 public:
 	Board(); // Creates new starting board
 	Board(Board*); // Copies board state
-	void play(); // game loop
+	void playMove(std::string); // game loop
+	void printBoard(std::string&);
 };
