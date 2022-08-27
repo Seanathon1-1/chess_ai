@@ -7,7 +7,7 @@
 #include "imgui_internal.h"
 #include "gl/glew.h"
 #include "GLFW/glfw3.h"
-#include "board.h"
+#include "game.h"
 
 #define WIN_TITLE "Chess AI"
 #define WIN_WIDTH  800
@@ -52,8 +52,7 @@ int main() {
     ImGui::StyleColorsDark();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    Board board;
-    string s;
+    Game game;
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         
@@ -67,13 +66,11 @@ int main() {
         ImGui::Text("Hey window!");
         ImGui::End();
 
-        s.clear();
-        char move[16] = "";
-        board.printBoard(s);
+        game.render();
         ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar);
-        ImGui::Text(s.c_str());
+        char move[16] = "";
         bool moveEntered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);
-        if (moveEntered) board.playMove(move);
+        if (moveEntered) game.makeUserMove(move);
         ImGui::End();
 
         // Render imgui into screen
