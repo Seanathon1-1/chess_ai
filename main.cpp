@@ -67,11 +67,6 @@ int main() {
         ImGui::End();
 
         game.render();
-        ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar);
-        char move[16] = "";
-        bool moveEntered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);
-        if (moveEntered) game.makeUserMove(move);
-        ImGui::End();
 
         // Render imgui into screen
         ImGui::Render();

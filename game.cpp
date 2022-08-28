@@ -394,9 +394,21 @@ void Game::updateThreatMaps() {
 
 void Game::render() {
 	board.render();
+	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar);
+	char move[16] = "";
+	bool moveEntered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);
+	if (moveEntered && !wait_for_promote) makeUserMove(move);
 	if (wait_for_promote) {
-		ImGui::Begin("Play window");
-		ImGui::Button("Queen");
-		ImGui::End();
+		PieceType promote_to = open;
+		if (ImGui::Button("Queen"))  promote_to = queen;
+		if (ImGui::Button("Knight")) promote_to = knight;
+		if (ImGui::Button("Rook"))   promote_to = rook;
+		if (ImGui::Button("Bishop")) promote_to = bishop;
+
+		if (promote_to != open) {
+			board.promote(promote_to);
+			wait_for_promote = 0;
+		}
 	}
+	ImGui::End();
 }

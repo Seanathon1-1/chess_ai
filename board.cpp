@@ -4,8 +4,6 @@
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-using namespace std;
-
 Board::Board() {
 	memset(&board, 0, sizeof(Piece) * 64);
 	// Pawns
@@ -46,18 +44,18 @@ Board::Board(Board* base) {
 }
 
 void print_threatmap(uint64_t map) {
-	cout << HORZ_LINE;
+	std::cout << HORZ_LINE;
 	int sqr;
 	for (int rank = 7; rank >= 0; rank--) {
-		cout << "| ";
+		std::cout << "| ";
 		for (int file = 0; file < 8; file++) {
 			sqr = BIDX(file, rank);
-			cout << (char)(XTRC_BIT(map, sqr) + '0');
-			cout << " | ";
+			std::cout << (char)(XTRC_BIT(map, sqr) + '0');
+			std::cout << " | ";
 		}
-		cout << "\b\n" << HORZ_LINE;
+		std::cout << "\b\n" << HORZ_LINE;
 	}
-	cout << "\n";
+	std::cout << "\n";
 }
 
 bool Board::makeMove(Piece p, int s, int d) {
@@ -91,10 +89,28 @@ bool Board::makeMove(Piece p, int s, int d) {
 
 	// TODO: Check for promotion
 	int promotion_sqr = (p.color == white) ? 7 : 0;
-	return ((p.kind == pawn) && (d / 8 == promotion_sqr));
+	if ((p.kind == pawn) && (d / 8 == promotion_sqr)) {
+		promoting = d;
+		return 1;
+	}
+	return 0;
 }
 
-void Board::printBoard(string& s) {
+void Board::promote(PieceType type) {
+	if (promoting == -1) {
+		std::cerr << "No piece able to promote!";
+		return;
+	}
+	if (type == open || type == pawn) {
+		std::cerr << "Invalid promotion type!";
+		return;
+	}
+
+	board[promoting].kind = type;
+	promoting == -1;
+}
+
+void Board::printBoard(std::string& s) {
 	Piece p;
 	char piece_c;
 	s += HORZ_LINE;
@@ -112,7 +128,7 @@ void Board::printBoard(string& s) {
 }
 
 void Board::render() {
-	string board_string;
+	std::string board_string;
 	printBoard(board_string);
 	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar);
 	ImGui::Text(board_string.c_str());

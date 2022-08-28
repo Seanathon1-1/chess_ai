@@ -5,3 +5,6 @@
 #define XTRC_BIT(map, bit) (((map) >> (bit)) & 1ULL)
 
 #define HORZ_LINE "|---|---|---|---|---|---|---|---|\n"
+
+enum PieceType { open, pawn, knight, bishop, rook, queen, king };
+enum Color { black = -1, none, white };
