@@ -9,17 +9,13 @@
 #include "GLFW/glfw3.h"
 #include "game.h"
 
-#define WIN_TITLE "Chess AI"
-#define WIN_WIDTH  800
-#define WIN_HEIGHT 600
-
 using namespace std;
 
 int main() {
     // Initialize GLFW.
     if (!glfwInit())
     {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
+        cerr << "Failed to initialize GLFW" << endl;
         return NULL;
     }
 
@@ -27,8 +23,8 @@ int main() {
     GLFWwindow* window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, WIN_TITLE, NULL, NULL);
     if (!window) 
     {
-        std::cerr << "Failed to open GLFW window." << std::endl;
-        glfwTerminate();
+        cerr << "Failed to open GLFW window." << endl;
+        glfwTerminate(); 
         exit(EXIT_FAILURE);
     }
 
@@ -38,7 +34,7 @@ int main() {
     // Initialize GLEW.
     if (glewInit())
     {
-        std::cerr << "Failed to initialize GLEW" << std::endl;
+        cerr << "Failed to initialize GLEW" << endl;
         return NULL;
     }
 
@@ -48,14 +44,94 @@ int main() {
     // imgui init
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 130");
+    ImGui_ImplOpenGL3_Init("#version 460");
     ImGui::StyleColorsDark();
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
-    Game game;
+    
+
+    const char* vertexShaderSource = "#version 330 core\n"
+        "layout(location = 0) in vec3 pos;\n"
+        "layout(location = 1) in vec3 col;\n"
+        "out vec4 vertColor;\n"
+        "void main()\n"
+        "{\n"
+        "   gl_Position = vec4(pos.x, pos.y, pos.z, 1.0);\n"
+        "   vertColor   = vec4(col.x, col.y, col.z, 1.0);\n"
+        "}\0";
+
+    unsigned int vertexShader;
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);    
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    
+    const char* fragmentShaderSource = "#version 330 core\n"
+        "in vec4 vertColor;\n"
+        "out vec4 FragColor; \n"
+        "void main()\n"
+        "{\n"
+        "   FragColor = vertColor;\n"
+        "}\0";
+
+    unsigned int fragmentShader;
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+
+    unsigned int shaderProgram;
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    float vertices[] = {
+            -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+             0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
+             0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f };
+
+    unsigned int VBO, VAO;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+
+    glBindVertexArray(VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    unsigned int frame_buffer_object;
+    glGenFramebuffers(1, &frame_buffer_object);
+    //glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_object);
+
+    glBindVertexArray(0);
+
+    Game game(frame_buffer_object);
     while (!glfwWindowShouldClose(window)) {
+        //cout << ImGui::GetWindowSize().x << ", " << ImGui::GetWindowSize().y << endl;
+        
         glfwPollEvents();
         
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buffer_object);
+        glEnable(GL_DEPTH_TEST);
+        glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);   
+
+        glUseProgram(shaderProgram);
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST);
+        glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
         // starts imgui frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -66,7 +142,33 @@ int main() {
         ImGui::Text("Hey window!");
         ImGui::End();
 
-        game.render();
+        glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+
+        /*/------------------------------------------------------------------
+        //create our ImGui window
+        ImGui::Begin("Scene Window");
+        //get the mouse position
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+
+        //pass the texture of the FBO
+        //window.getRenderTexture() is the texture of the FBO
+        //the next parameter is the upper left corner for the uvs to be applied at
+        //the third parameter is the lower right corner
+        //the last two parameters are the UVs
+        //they have to be flipped (normally they would be (0,0);(1,1) 
+        ImGui::GetWindowDrawList()->AddImage(
+            (void*)window.getRenderTexture(),
+            ImVec2(ImGui::GetCursorScreenPos()),
+            ImVec2(ImGui::GetCursorScreenPos().x + window.getWidth() / 2,
+                ImGui::GetCursorScreenPos().y + window.getHeight() / 2), ImVec2(0, 1), ImVec2(1, 0));
+
+        //we are done working with this window
+        ImGui::End();
+        //---------------------------------------------------------------------*/
+        
+        game.render(frame_buffer_object);
+
+
 
         // Render imgui into screen
         ImGui::Render();
@@ -75,13 +177,17 @@ int main() {
 
         glfwSwapBuffers(window);
     }
-
+     
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteProgram(shaderProgram);
+
     //board.play();
 
-
+    glfwTerminate();
     return 0;
 }

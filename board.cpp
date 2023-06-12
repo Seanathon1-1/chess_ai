@@ -1,10 +1,12 @@
 #include "board.h"
 #include "imgui.h"
+#include "gl/glew.h"
+#include "GLFW/glfw3.h"
 #include <cctype>
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-Board::Board() {
+Board::Board(unsigned int fbo) {
 	memset(&board, 0, sizeof(Piece) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
@@ -37,6 +39,30 @@ Board::Board() {
 	// Kings
 	board[4] = Piece(king, white);
 	board[60] = Piece(king, black);
+
+	glGenTextures(1, &board_image);
+	glBindTexture(GL_TEXTURE_2D, board_image);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIN_WIDTH, WIN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+	unsigned int render_buffer_object;
+	glGenRenderbuffers(1, &render_buffer_object);
+	glBindRenderbuffer(GL_RENDERBUFFER, render_buffer_object);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WIN_WIDTH, WIN_HEIGHT);
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	// attaching render buffer 
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, board_image, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buffer_object);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Frame buffer failed.\n" << std::endl;
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 Board::Board(Board* base) {
@@ -87,7 +113,7 @@ bool Board::makeMove(Piece p, int s, int d) {
 		}
 	}
 
-	// TODO: Check for promotion
+	// Check for promotion
 	int promotion_sqr = (p.color == white) ? 7 : 0;
 	if ((p.kind == pawn) && (d / 8 == promotion_sqr)) {
 		promoting = d;
@@ -127,10 +153,16 @@ void Board::printBoard(std::string& s) {
 	}
 }
 
-void Board::render() {
+void Board::render(unsigned int fbo) {
 	std::string board_string;
 	printBoard(board_string);
-	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar);
+	ImGui::Begin("Play window");
 	ImGui::Text(board_string.c_str());
 	ImGui::End();
+
+	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {
+		//ImGui::SetCursorPos({0, 0})
+		ImGui::Image((void*)(intptr_t)board_image, ImGui::GetContentRegionAvail());
+	}
+	ImGui::End(); 
 }

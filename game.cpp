@@ -1,8 +1,8 @@
 #include "game.h"
 #include "imgui.h"
 
-Game::Game() {
-	board = Board();
+Game::Game(unsigned int fbo) {
+	board = Board(fbo);
 	whose_turn = white;
 	white_king = 4;
 	black_king = 60;
@@ -223,10 +223,9 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 	}
 
 	// Look to see if move leaves player's king in check
-	Game test_move;
 	int source = BIDX(file, rank);
 	for (auto iter = possible_moves.begin(); iter != possible_moves.end(); iter++) {
-		test_move = Game(this);
+		Game test_move = Game(this);
 		test_move.makeLegalMove(p, source, *iter);
 		if ((p.color == white && test_move.white_check) || (p.color == black && test_move.black_check)) continue;
 		moves->push_back(*iter);
@@ -385,25 +384,24 @@ void Game::updateThreatMaps() {
 			set_bit(threat_map, sqr);
 		}
 	}
-	//cout << "White Threat Map:\n";
-	//print_threatmap(white_threat_map);
-	//cout << "Black Threat Map:\n";
-	//print_threatmap(black_threat_map);
-
 }
 
-void Game::render() {
-	board.render();
-	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar);
+void Game::render(unsigned int fbo) {
+	ImGui::SetNextWindowPos(ImVec2(0, 0)); 
+	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+	board.render(fbo);
+	// Handle user entered moves
 	char move[16] = "";
 	bool moveEntered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);
+
+	// Block moves until promotion has been dealt with
 	if (moveEntered && !wait_for_promote) makeUserMove(move);
 	if (wait_for_promote) {
 		PieceType promote_to = open;
-		if (ImGui::Button("Queen"))  promote_to = queen;
-		if (ImGui::Button("Knight")) promote_to = knight;
-		if (ImGui::Button("Rook"))   promote_to = rook;
-		if (ImGui::Button("Bishop")) promote_to = bishop;
+		if (ImGui::Button("Queen"))  promote_to = queen;  ImGui::SameLine();
+		if (ImGui::Button("Knight")) promote_to = knight; ImGui::SameLine();
+		if (ImGui::Button("Rook"))   promote_to = rook;   ImGui::SameLine();
+		if (ImGui::Button("Bishop")) promote_to = bishop; ImGui::SameLine();
 
 		if (promote_to != open) {
 			board.promote(promote_to);

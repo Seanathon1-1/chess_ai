@@ -2,9 +2,10 @@
 #include "board.h"
 #include <vector>
 
+
 class Game {
 private: 
-	Board board;
+	Board board = Board(1);
 	bool white_check = 0;
 	bool black_check = 0;
 	int white_king;
@@ -19,12 +20,13 @@ private:
 	bool white_long_castle = 1;
 	bool black_long_castle = 1;
 	bool wait_for_promote = 0;
+	unsigned int fbo;
 
 public:
-	Game();
+	Game(unsigned int);
 	Game(Game*);
 	void makeUserMove(std::string);
-	void render();
+	void render(unsigned int);
 
 private:
 	void makeLegalMove(Piece, int, int);
