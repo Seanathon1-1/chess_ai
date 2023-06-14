@@ -7,6 +7,7 @@
       "features": [ "glfw-binding", "opengl3-binding", "docking-experimental" ]
     },
     "glew",
-    "glfw3"
+    "glfw3",
+    "glm"
   ]
 }

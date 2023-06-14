@@ -3,6 +3,7 @@
 #include "util.h"
 #include <vector>
 #include <string>
+#include <glm/glm.hpp>
 #include <iostream>
 
 struct Piece {
@@ -12,13 +13,24 @@ struct Piece {
 
 #define empty_sqr Piece(open, none);
 
+struct Square {
+	glm::vec3 top_left;
+	glm::vec3 top_right;
+	glm::vec3 bottom_left;
+	glm::vec3 bottom_right;
+	glm::vec3 color;
+};
+
+
 struct Board { 
 private:
 	Piece board[64];
 	int promoting = -1;
 
 	// graphical components
-	unsigned int board_image;
+	std::vector<Square*> gSquares;
+	unsigned int gBoard;
+	unsigned int fbo;
 
 public:
 	Board(unsigned int); // Creates new starting board

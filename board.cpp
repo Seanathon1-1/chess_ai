@@ -6,7 +6,23 @@
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-Board::Board(unsigned int fbo) {
+
+Board::Board(unsigned int fbo) : fbo(fbo) {
+	for (int i = 0; i < 64; i++) {
+		float left = (i % 8 - 4) * 0.25f - .15f;
+		float right = (i % 8 - 4) * 0.25f + .15f;
+		float top = (i / 8.f - 4) * 0.25f - .15f;
+		float bottom = (i / 8.f - 4) * 0.25f + .15f;
+		
+		Square* sqr = new Square();
+		sqr->top_left = glm::vec3(top, left, 0.0f);
+		sqr->top_right = glm::vec3(top, left, 0.0f);
+		sqr->bottom_left = glm::vec3(top, left, 0.0f);
+		sqr->bottom_right = glm::vec3(top, left, 0.0f);
+		sqr->color = (i % 2) ? glm::vec3(0.1f) : glm::vec3(1.0f);
+		gSquares.push_back(sqr);
+	}
+
 	memset(&board, 0, sizeof(Piece) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
@@ -40,8 +56,8 @@ Board::Board(unsigned int fbo) {
 	board[4] = Piece(king, white);
 	board[60] = Piece(king, black);
 
-	glGenTextures(1, &board_image);
-	glBindTexture(GL_TEXTURE_2D, board_image);
+	glGenTextures(1, &gBoard);
+	glBindTexture(GL_TEXTURE_2D, gBoard);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIN_WIDTH, WIN_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -56,7 +72,7 @@ Board::Board(unsigned int fbo) {
 
 	// attaching render buffer 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, board_image, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gBoard, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, render_buffer_object);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -133,7 +149,7 @@ void Board::promote(PieceType type) {
 	}
 
 	board[promoting].kind = type;
-	promoting == -1;
+	promoting = -1;
 }
 
 void Board::printBoard(std::string& s) {
@@ -153,16 +169,56 @@ void Board::printBoard(std::string& s) {
 	}
 }
 
-void Board::render(unsigned int fbo) {
+void Board::render(unsigned int shaderProgram) {
 	std::string board_string;
 	printBoard(board_string);
 	ImGui::Begin("Play window");
 	ImGui::Text(board_string.c_str());
 	ImGui::End();
 
-	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {
-		//ImGui::SetCursorPos({0, 0})
-		ImGui::Image((void*)(intptr_t)board_image, ImGui::GetContentRegionAvail());
+	
+	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
+		GLuint vertex_buffer, vertex_array;
+		glGenVertexArrays(1, &vertex_array);
+		glGenBuffers(1, &vertex_buffer);
+
+		std::vector<float> vertex_buffer_data;
+		for (Square* sqr : gSquares) {
+			float top_left[] = { sqr->top_left.x, sqr->top_left.y, sqr->top_left.z, sqr->color.x, sqr->color.y, sqr->color.z };
+			for (float i : top_left) vertex_buffer_data.push_back(i);
+			float top_right[] = { sqr->top_right.x, sqr->top_right.y, sqr->top_right.z, sqr->color.x, sqr->color.y, sqr->color.z };
+			for (float i : top_right) vertex_buffer_data.push_back(i);
+			float bottom_left[] = { sqr->bottom_left.x, sqr->bottom_left.y, sqr->bottom_left.z, sqr->color.x, sqr->color.y, sqr->color.z };
+			for (float i : top_right) vertex_buffer_data.push_back(i);
+			float bottom_right[] = { sqr->bottom_right.x, sqr->bottom_right.y, sqr->bottom_right.z, sqr->color.x, sqr->color.y, sqr->color.z };
+			for (float i : top_right) vertex_buffer_data.push_back(i);
+		}
+		glBindVertexArray(vertex_array);
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		glBufferData(GL_ARRAY_BUFFER, vertex_buffer_data.size() * sizeof(float), vertex_buffer_data.data(), GL_STATIC_DRAW);
+		
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+		glEnable(GL_DEPTH_TEST);
+		glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glUseProgram(shaderProgram);
+		glBindVertexArray(vertex_array);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+		glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
+		glDeleteVertexArrays(1, &vertex_array);
+		glDeleteBuffers(1, &vertex_buffer);
 	}
 	ImGui::End(); 
 }

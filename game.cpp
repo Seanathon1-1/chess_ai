@@ -56,7 +56,7 @@ void Game::makeUserMove(std::string move) {
 	if (selected.kind == open) {
 		std::cout << "No piece selected to move.\n";
 		return;
-	}
+	} 
 
 	// check that it is the correct player's turn
 	if (selected.color != whose_turn) {
@@ -386,10 +386,10 @@ void Game::updateThreatMaps() {
 	}
 }
 
-void Game::render(unsigned int fbo) {
+void Game::render(unsigned int shaderProgram) {
 	ImGui::SetNextWindowPos(ImVec2(0, 0)); 
 	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-	board.render(fbo);
+	board.render(shaderProgram);
 	// Handle user entered moves
 	char move[16] = "";
 	bool moveEntered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);

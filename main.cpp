@@ -93,19 +93,6 @@ int main() {
              0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
              0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f };
 
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
     unsigned int frame_buffer_object;
     glGenFramebuffers(1, &frame_buffer_object);
     //glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_object);
@@ -117,20 +104,6 @@ int main() {
         //cout << ImGui::GetWindowSize().x << ", " << ImGui::GetWindowSize().y << endl;
         
         glfwPollEvents();
-        
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, frame_buffer_object);
-        glEnable(GL_DEPTH_TEST);
-        glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);   
-
-        glUseProgram(shaderProgram);
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST);
-        glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-        glClear(GL_COLOR_BUFFER_BIT);
 
         // starts imgui frame
         ImGui_ImplOpenGL3_NewFrame();
@@ -166,7 +139,7 @@ int main() {
         ImGui::End();
         //---------------------------------------------------------------------*/
         
-        game.render(frame_buffer_object);
+        game.render(shaderProgram);
 
 
 
@@ -182,8 +155,6 @@ int main() {
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);
 
     //board.play();
