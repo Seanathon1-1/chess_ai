@@ -9,21 +9,21 @@ const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
 Board::Board(unsigned int fbo) : fbo(fbo) {
 	for (int i = 0; i < 64; i++) {
-		float left = (i % 8 - 4) * 0.25f - .15f;
-		float right = (i % 8 - 4) * 0.25f + .15f;
-		float top = (i / 8.f - 4) * 0.25f - .15f;
-		float bottom = (i / 8.f - 4) * 0.25f + .15f;
+		float left = (i % 8 - 4) * .25f;
+		float right = (i % 8 - 3) * .25f;
+		float top = (i / 8 - 3) * .25f;
+		float bottom = (i / 8 - 4) * .25f;
 		
 		Square* sqr = new Square();
-		sqr->top_left = glm::vec3(top, left, 0.0f);
-		sqr->top_right = glm::vec3(top, left, 0.0f);
-		sqr->bottom_left = glm::vec3(top, left, 0.0f);
-		sqr->bottom_right = glm::vec3(top, left, 0.0f);
-		sqr->color = (i % 2) ? glm::vec3(0.1f) : glm::vec3(1.0f);
+		sqr->top_left = glm::vec3(left, top, 0.0f);
+		sqr->top_right = glm::vec3(right, top, 0.0f);
+		sqr->bottom_left = glm::vec3(left, bottom, 0.0f);
+		sqr->bottom_right = glm::vec3(right, bottom, 0.0f);
+		sqr->color = ((i % 2) ^ (i / 8 % 2)) ? glm::vec3(0.1f, 0.0f, 0.0f) : glm::vec3(1.0f, 1.0f, 1.0f);
 		gSquares.push_back(sqr);
 	}
 
-	memset(&board, 0, sizeof(Piece) * 64);
+ 	memset(&board, 0, sizeof(Piece) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
 		board[8 + file] = Piece(pawn, white);
@@ -185,13 +185,18 @@ void Board::render(unsigned int shaderProgram) {
 		std::vector<float> vertex_buffer_data;
 		for (Square* sqr : gSquares) {
 			float top_left[] = { sqr->top_left.x, sqr->top_left.y, sqr->top_left.z, sqr->color.x, sqr->color.y, sqr->color.z };
-			for (float i : top_left) vertex_buffer_data.push_back(i);
 			float top_right[] = { sqr->top_right.x, sqr->top_right.y, sqr->top_right.z, sqr->color.x, sqr->color.y, sqr->color.z };
-			for (float i : top_right) vertex_buffer_data.push_back(i);
 			float bottom_left[] = { sqr->bottom_left.x, sqr->bottom_left.y, sqr->bottom_left.z, sqr->color.x, sqr->color.y, sqr->color.z };
-			for (float i : top_right) vertex_buffer_data.push_back(i);
 			float bottom_right[] = { sqr->bottom_right.x, sqr->bottom_right.y, sqr->bottom_right.z, sqr->color.x, sqr->color.y, sqr->color.z };
+			// top
+			for (float i : top_left) vertex_buffer_data.push_back(i);
 			for (float i : top_right) vertex_buffer_data.push_back(i);
+			for (float i : bottom_left) vertex_buffer_data.push_back(i);
+
+			// bottom
+			for (float i : top_right) vertex_buffer_data.push_back(i);
+			for (float i : bottom_left) vertex_buffer_data.push_back(i);
+			for (float i : bottom_right) vertex_buffer_data.push_back(i);
 		}
 		glBindVertexArray(vertex_array);
 		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
@@ -209,7 +214,7 @@ void Board::render(unsigned int shaderProgram) {
 
 		glUseProgram(shaderProgram);
 		glBindVertexArray(vertex_array);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, vertex_buffer_data.size() / 2);
 
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
