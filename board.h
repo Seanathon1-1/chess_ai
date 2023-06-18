@@ -1,9 +1,7 @@
 #pragma once
 
 #include "util.h"
-#include <vector>
 #include <string>
-#include <glm/glm.hpp>
 #include <iostream>
 
 struct Piece {
@@ -13,6 +11,8 @@ struct Piece {
 
 #define empty_sqr Piece(open, none);
 
+
+// TODO: move into geometries
 struct Square {
 	glm::vec3 top_left;
 	glm::vec3 top_right;
@@ -24,6 +24,7 @@ struct Square {
 
 struct Board { 
 private:
+	// essential data
 	Piece board[64];
 	int promoting = -1;
 

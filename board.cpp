@@ -183,20 +183,21 @@ void Board::render(unsigned int shaderProgram) {
 		glGenBuffers(1, &vertex_buffer);
 
 		std::vector<float> vertex_buffer_data;
-		for (Square* sqr : gSquares) {
+		for (int i = 0; i < 64; i++) {
+			Square* sqr = gSquares[i];
 			float top_left[] = { sqr->top_left.x, sqr->top_left.y, sqr->top_left.z, sqr->color.x, sqr->color.y, sqr->color.z };
 			float top_right[] = { sqr->top_right.x, sqr->top_right.y, sqr->top_right.z, sqr->color.x, sqr->color.y, sqr->color.z };
 			float bottom_left[] = { sqr->bottom_left.x, sqr->bottom_left.y, sqr->bottom_left.z, sqr->color.x, sqr->color.y, sqr->color.z };
 			float bottom_right[] = { sqr->bottom_right.x, sqr->bottom_right.y, sqr->bottom_right.z, sqr->color.x, sqr->color.y, sqr->color.z };
 			// top
-			for (float i : top_left) vertex_buffer_data.push_back(i);
-			for (float i : top_right) vertex_buffer_data.push_back(i);
-			for (float i : bottom_left) vertex_buffer_data.push_back(i);
+			for (float j : top_left) vertex_buffer_data.push_back(j);
+			for (float j : top_right) vertex_buffer_data.push_back(j);
+			for (float j : bottom_left) vertex_buffer_data.push_back(j);
 
 			// bottom
-			for (float i : top_right) vertex_buffer_data.push_back(i);
-			for (float i : bottom_left) vertex_buffer_data.push_back(i);
-			for (float i : bottom_right) vertex_buffer_data.push_back(i);
+			for (float j : top_right) vertex_buffer_data.push_back(j);
+			for (float j : bottom_left) vertex_buffer_data.push_back(j);
+			for (float j : bottom_right) vertex_buffer_data.push_back(j);
 		}
 		glBindVertexArray(vertex_array);
 		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
