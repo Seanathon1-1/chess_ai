@@ -2,6 +2,7 @@
 
 #include "util.h"
 #include <string>
+#include <iostream>
 
 struct Piece {
 	PieceType kind;

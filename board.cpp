@@ -56,19 +56,9 @@ void Square::draw(unsigned int shaderProgram, unsigned int fbo, bool debug = fal
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	glUseProgram(shaderProgram);
 	glBindVertexArray(vertex_array);
 	glDrawArrays(GL_TRIANGLES, 0, vertex_buffer_data.size() / 2);
-
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glDisable(GL_DEPTH_TEST);
-	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-	glClear(GL_COLOR_BUFFER_BIT);
 
 	glDeleteVertexArrays(1, &vertex_array);
 	glDeleteBuffers(1, &vertex_buffer); 
@@ -237,6 +227,11 @@ void Board::printBoard(std::string& s) {
 }
 
 void Board::printBoardImage(unsigned int shaderProgram) {
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
 		std::cerr << "Printing new Board...................\n";
 		for (int i = 0; i < 64; i++) {
@@ -246,6 +241,12 @@ void Board::printBoardImage(unsigned int shaderProgram) {
 			Square s = Square(top_left, (i % 2) ^ (i / 8 % 2));
 			s.draw(shaderProgram, fbo, true);
 		}
+	
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+		glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
 		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
 		std::cerr << "===================================================================\n";
 	}
