@@ -2,7 +2,6 @@
 
 #include "util.h"
 #include <string>
-#include <iostream>
 
 struct Piece {
 	PieceType kind;
@@ -14,11 +13,9 @@ struct Piece {
 
 // TODO: move into geometries
 struct Square {
-	glm::vec3 top_left;
-	glm::vec3 top_right;
-	glm::vec3 bottom_left;
-	glm::vec3 bottom_right;
-	glm::vec3 color;
+	glm::vec3 top_left_corner;
+	bool isBlack;
+	void draw(unsigned int, unsigned int, bool);
 };
 
 
@@ -27,8 +24,7 @@ private:
 	// essential data
 	Piece board[64];
 	int promoting = -1;
-
-	// graphical components
+ 	// graphical components
 	std::vector<Square*> gSquares;
 	unsigned int gBoard;
 	unsigned int fbo;
@@ -39,6 +35,7 @@ public:
 	bool makeMove(Piece, int, int);
 	void promote(PieceType);
 	void printBoard(std::string&);
+	void printBoardImage(unsigned int);
 	inline Piece getPiece(int s) { return board[s]; }
 	void render(unsigned int);
 };

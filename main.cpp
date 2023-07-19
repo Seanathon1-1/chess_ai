@@ -16,7 +16,7 @@ int main() {
     if (!glfwInit())
     {
         cerr << "Failed to initialize GLFW" << endl;
-        return NULL;
+        return NULL; 
     }
 
     // Create the GLFW window.

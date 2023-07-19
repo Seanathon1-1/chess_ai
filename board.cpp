@@ -4,8 +4,75 @@
 #include "GLFW/glfw3.h"
 #include <cctype>
 
+#define WHITE_SQUARE_COLOR glm::vec3(1.f)
+#define BLACK_SQUARE_COLOR glm::vec3(.1f, 0.f, .1f)
+#define SQUARE_SIZE .25f
+
+glm::vec3 square_top_right_offset = glm::vec3(SQUARE_SIZE, 0.f, 0.f);
+glm::vec3 square_bottom_left_offset = glm::vec3(0.f,  -1 * SQUARE_SIZE, 0.f);
+glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 0.f);
+
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
+void Square::draw(unsigned int shaderProgram, unsigned int fbo, bool debug = false) {
+	GLuint vertex_buffer, vertex_array;
+	glGenVertexArrays(1, &vertex_array);
+	glGenBuffers(1, &vertex_buffer);
+
+	std::vector<float> vertex_buffer_data;
+
+	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
+	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
+	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
+	glm::vec3 color = (isBlack) ? BLACK_SQUARE_COLOR : WHITE_SQUARE_COLOR;
+	
+	if (debug) {
+		std::cerr << "Top left corner: ";
+  		print_vec3(top_left_corner);
+		std::cerr << "Top right corner: ";
+		print_vec3(top_right_corner);
+		std::cerr << "Bottom left corner: ";
+		print_vec3(bottom_left_corner);
+		std::cerr << "Bottom right corner: ";
+		print_vec3(bottom_right_corner);
+	}
+	  
+	std::vector<glm::vec3*> vertices = { &top_left_corner, &top_right_corner, &bottom_left_corner, &top_right_corner, &bottom_left_corner, &bottom_right_corner };
+	for (auto vertex : vertices) {
+		vertex_buffer_data.push_back(vertex->x);
+		vertex_buffer_data.push_back(vertex->y);
+		vertex_buffer_data.push_back(vertex->z);
+		vertex_buffer_data.push_back(color.x);
+		vertex_buffer_data.push_back(color.y);
+		vertex_buffer_data.push_back(color.z);
+	}
+
+	glBindVertexArray(vertex_array);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER, vertex_buffer_data.size() * sizeof(float), vertex_buffer_data.data(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUseProgram(shaderProgram);
+	glBindVertexArray(vertex_array);
+	glDrawArrays(GL_TRIANGLES, 0, vertex_buffer_data.size() / 2);
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glDisable(GL_DEPTH_TEST);
+	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glDeleteVertexArrays(1, &vertex_array);
+	glDeleteBuffers(1, &vertex_buffer); 
+}
 
 Board::Board(unsigned int fbo) : fbo(fbo) {
 	for (int i = 0; i < 64; i++) {
@@ -14,13 +81,13 @@ Board::Board(unsigned int fbo) : fbo(fbo) {
 		float top = (i / 8 - 3) * .25f;
 		float bottom = (i / 8 - 4) * .25f;
 		
-		Square* sqr = new Square();
+		/*Square* sqr = new Square();
 		sqr->top_left = glm::vec3(left, top, 0.0f);
 		sqr->top_right = glm::vec3(right, top, 0.0f);
 		sqr->bottom_left = glm::vec3(left, bottom, 0.0f);
 		sqr->bottom_right = glm::vec3(right, bottom, 0.0f);
 		sqr->color = ((i % 2) ^ (i / 8 % 2)) ? glm::vec3(0.1f, 0.0f, 0.0f) : glm::vec3(1.0f, 1.0f, 1.0f);
-		gSquares.push_back(sqr);
+		gSquares.push_back(sqr);*/
 	}
 
  	memset(&board, 0, sizeof(Piece) * 64);
@@ -169,6 +236,21 @@ void Board::printBoard(std::string& s) {
 	}
 }
 
+void Board::printBoardImage(unsigned int shaderProgram) {
+	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
+		std::cerr << "Printing new Board...................\n";
+		for (int i = 0; i < 64; i++) {
+			float left = (i % 8 - 4) * .25f;
+			float top = (i / 8 - 3) * .25f;
+			glm::vec3 top_left = glm::vec3(left, top, 0.f);
+			Square s = Square(top_left, (i % 2) ^ (i / 8 % 2));
+			s.draw(shaderProgram, fbo, true);
+		}
+		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
+		std::cerr << "===================================================================\n";
+	}
+}
+
 void Board::render(unsigned int shaderProgram) {
 	std::string board_string;
 	printBoard(board_string);
@@ -177,54 +259,6 @@ void Board::render(unsigned int shaderProgram) {
 	ImGui::End();
 
 	
-	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
-		GLuint vertex_buffer, vertex_array;
-		glGenVertexArrays(1, &vertex_array);
-		glGenBuffers(1, &vertex_buffer);
-
-		std::vector<float> vertex_buffer_data;
-		for (int i = 0; i < 64; i++) {
-			Square* sqr = gSquares[i];
-			float top_left[] = { sqr->top_left.x, sqr->top_left.y, sqr->top_left.z, sqr->color.x, sqr->color.y, sqr->color.z };
-			float top_right[] = { sqr->top_right.x, sqr->top_right.y, sqr->top_right.z, sqr->color.x, sqr->color.y, sqr->color.z };
-			float bottom_left[] = { sqr->bottom_left.x, sqr->bottom_left.y, sqr->bottom_left.z, sqr->color.x, sqr->color.y, sqr->color.z };
-			float bottom_right[] = { sqr->bottom_right.x, sqr->bottom_right.y, sqr->bottom_right.z, sqr->color.x, sqr->color.y, sqr->color.z };
-			// top
-			for (float j : top_left) vertex_buffer_data.push_back(j);
-			for (float j : top_right) vertex_buffer_data.push_back(j);
-			for (float j : bottom_left) vertex_buffer_data.push_back(j);
-
-			// bottom
-			for (float j : top_right) vertex_buffer_data.push_back(j);
-			for (float j : bottom_left) vertex_buffer_data.push_back(j);
-			for (float j : bottom_right) vertex_buffer_data.push_back(j);
-		}
-		glBindVertexArray(vertex_array);
-		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-		glBufferData(GL_ARRAY_BUFFER, vertex_buffer_data.size() * sizeof(float), vertex_buffer_data.data(), GL_STATIC_DRAW);
-		
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-		glEnableVertexAttribArray(1);
-
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
-		glEnable(GL_DEPTH_TEST);
-		glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glUseProgram(shaderProgram);
-		glBindVertexArray(vertex_array);
-		glDrawArrays(GL_TRIANGLES, 0, vertex_buffer_data.size() / 2);
-
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-		glDisable(GL_DEPTH_TEST);
-		glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
-		glDeleteVertexArrays(1, &vertex_array);
-		glDeleteBuffers(1, &vertex_buffer);
-	}
+	printBoardImage(shaderProgram); 
 	ImGui::End(); 
 }
