@@ -12,10 +12,10 @@ struct Piece {
 #define empty_sqr Piece(open, none);
 
 
-// TODO: move into geometries
 struct Square {
 	glm::vec3 top_left_corner;
-	bool isBlack;
+	bool is_black;
+	Piece piece;
 	void draw(unsigned int, unsigned int, bool);
 };
 
