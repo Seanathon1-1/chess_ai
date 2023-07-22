@@ -12,16 +12,21 @@ struct Piece {
 #define empty_sqr Piece(open, none);
 
 
-struct Square {
-	glm::vec3 top_left_corner;
+class Square {
 	bool is_black;
-	Piece piece;
-	void draw(unsigned int, unsigned int, bool);
+	glm::vec3 top_left_corner;
+	glm::vec3 top_right_corner;
+	glm::vec3 bottom_left_corner;
+	glm::vec3 bottom_right_corner;
+
+public:
+	Square(int);
+	void draw(unsigned int, bool);
+	void drawTexture(std::string, unsigned int);
 };
 
 
-struct Board { 
-private:
+class Board { 
 	// essential data
 	Piece board[64];
 	int promoting = -1;
@@ -29,6 +34,7 @@ private:
 	std::vector<Square*> gSquares;
 	unsigned int gBoard;
 	unsigned int fbo;
+	unsigned int textureShaderProgram;
 
 public:
 	Board(unsigned int); // Creates new starting board
