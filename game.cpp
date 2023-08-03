@@ -225,10 +225,13 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 	// Look to see if move leaves player's king in check
 	int source = BIDX(file, rank);
 	for (auto iter = possible_moves.begin(); iter != possible_moves.end(); iter++) {
-		Game test_move = Game(this);
-		test_move.makeLegalMove(p, source, *iter);
-		if ((p.color == white && test_move.white_check) || (p.color == black && test_move.black_check)) continue;
-		moves->push_back(*iter);
+		Game* test_move = new Game(this);
+		test_move->makeLegalMove(p, source, *iter);
+
+		bool white_self_check = p.color == white && test_move->white_check;
+		bool black_self_check = p.color == black && test_move->black_check;
+		if (!white_self_check && !black_self_check) moves->push_back(*iter);
+		delete test_move;
 	}
 }
 
@@ -383,13 +386,13 @@ void Game::updateThreatMaps() {
 			//cout << "Setting the bit of square " << sqr << " from piece on square " << i << "...\n";
 			set_bit(threat_map, sqr);
 		}
-	}
+ 	}
 }
 
-void Game::render(unsigned int shaderProgram) {
+void Game::render(Shader shader) {
 	ImGui::SetNextWindowPos(ImVec2(0, 0)); 
 	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-	board.render(shaderProgram);
+	board.render(shader);
 	// Handle user entered moves
 	char move[16] = "";
 	bool moveEntered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);

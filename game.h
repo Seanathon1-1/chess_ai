@@ -1,5 +1,6 @@
 #pragma once
 #include "board.h"
+#include "shader.h"
 #include <vector>
 
 
@@ -26,7 +27,7 @@ public:
 	Game(unsigned int);
 	Game(Game*);
 	void makeUserMove(std::string);
-	void render(unsigned int);
+	void render(Shader);
 
 private:
 	void makeLegalMove(Piece, int, int);

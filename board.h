@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util.h"
+#include "shader.h"
 #include <string>
 #include <iostream>
 
@@ -12,21 +13,24 @@ struct Piece {
 #define empty_sqr Piece(open, none);
 
 
-class Square {
-	bool is_black;
+struct Square {
 	glm::vec3 top_left_corner;
 	glm::vec3 top_right_corner;
 	glm::vec3 bottom_left_corner;
 	glm::vec3 bottom_right_corner;
+	bool is_black;
+	Piece piece;
 
 public:
-	Square(int);
-	void draw(unsigned int, bool);
+	Square(glm::vec3, bool, Piece);
+	void draw(Shader, bool);
 	void drawTexture(std::string, unsigned int);
+	void draw(unsigned int, unsigned int, bool);
 };
 
 
-class Board { 
+struct Board { 
+private:
 	// essential data
 	Piece board[64];
 	int promoting = -1;
@@ -34,7 +38,6 @@ class Board {
 	std::vector<Square*> gSquares;
 	unsigned int gBoard;
 	unsigned int fbo;
-	unsigned int textureShaderProgram;
 
 public:
 	Board(unsigned int); // Creates new starting board
@@ -42,7 +45,7 @@ public:
 	bool makeMove(Piece, int, int);
 	void promote(PieceType);
 	void printBoard(std::string&);
-	void printBoardImage(unsigned int);
+	void printBoardImage(Shader);
 	inline Piece getPiece(int s) { return board[s]; }
-	void render(unsigned int);
+	void render(Shader);
 };
