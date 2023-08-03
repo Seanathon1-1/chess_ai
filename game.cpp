@@ -386,10 +386,10 @@ void Game::updateThreatMaps() {
 	}
 }
 
-void Game::render(unsigned int shaderProgram) {
+void Game::render() {
 	ImGui::SetNextWindowPos(ImVec2(0, 0)); 
 	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-	board.render(shaderProgram);
+	board.render();
 	// Handle user entered moves
 	char move[16] = "";
 	bool moveEntered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);

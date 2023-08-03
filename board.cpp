@@ -1,7 +1,6 @@
 #include "board.h"
 #include "imgui.h"
 #include "gl/glew.h"
-#include "GLFW/glfw3.h"
 #include <cctype>
 
 #include <Windows.h>
@@ -16,7 +15,7 @@ glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-void Square::draw(unsigned int shaderProgram, unsigned int fbo, bool debug = false) {
+void Square::draw(Shader shader, unsigned int fbo, bool debug = false) {
 	unsigned int stride = 6;
 	bool has_texture = false;
 	
@@ -47,7 +46,7 @@ void Square::draw(unsigned int shaderProgram, unsigned int fbo, bool debug = fal
 		print_vec3(bottom_right_corner);
 	}
 
-	/*std::vector<glm::vec3*> vertices = {&top_left_corner, &top_right_corner, &bottom_left_corner, &top_right_corner, &bottom_left_corner, &bottom_right_corner};
+	std::vector<glm::vec3*> vertices = {&top_left_corner, &top_right_corner, &bottom_left_corner, &top_right_corner, &bottom_left_corner, &bottom_right_corner};
 	for (auto vertex : vertices) {
 		vertex_buffer_data.push_back(vertex->x);
 		vertex_buffer_data.push_back(vertex->y);
@@ -55,15 +54,15 @@ void Square::draw(unsigned int shaderProgram, unsigned int fbo, bool debug = fal
 		vertex_buffer_data.push_back(color.x);
 		vertex_buffer_data.push_back(color.y);
 		vertex_buffer_data.push_back(color.z);
-	}*/
+	}
 
-	std::vector<float> top_left_array = { top_left_corner.x, top_left_corner.y, top_left_corner.z, color.x, color.y, color.z };
+	/*std::vector<float> top_left_array = {top_left_corner.x, top_left_corner.y, top_left_corner.z, color.x, color.y, color.z};
 	std::vector<float> top_right_array = { top_right_corner.x, top_right_corner.y, top_right_corner.z, color.x, color.y, color.z };
 	std::vector<float> bottom_left_array = { bottom_left_corner.x, bottom_left_corner.y, bottom_left_corner.z, color.x, color.y, color.z };
-	std::vector<float> bottom_right_array = { bottom_right_corner.x, bottom_left_corner.y, bottom_left_corner.z, color.x, color.y, color.z };
+	std::vector<float> bottom_right_array = { bottom_right_corner.x, bottom_left_corner.y, bottom_left_corner.z, color.x, color.y, color.z };*/
 	  
 	int width, height, nChannels;
-	if (piece.kind != open) {
+	/*if (piece.kind != open) {
 		// setup opengl texture object
 		unsigned int texture;
 		glGenTextures(1, &texture);
@@ -95,7 +94,7 @@ void Square::draw(unsigned int shaderProgram, unsigned int fbo, bool debug = fal
 		bottom_left_array.push_back(0.f); bottom_left_array.push_back(0.f);
 		bottom_right_array.push_back(1.f); bottom_right_array.push_back(0.f);
 		stride = 8;
-	}
+	}*/
 	
 	glBindVertexArray(vertex_array);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
@@ -105,21 +104,26 @@ void Square::draw(unsigned int shaderProgram, unsigned int fbo, bool debug = fal
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-	if (has_texture) {
+	/*if (has_texture) {
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
 		glEnableVertexAttribArray(2);
-	}
+	}*/
 
-	glUseProgram(shaderProgram);
+	shader.activate();
 	glBindVertexArray(vertex_array);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	glDrawArrays(GL_TRIANGLES, 0, vertex_buffer_data.size() / 2);
 
+	shader.deactivate();
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &vertex_array);
 	glDeleteBuffers(1, &vertex_buffer); 
 }
 
 Board::Board(unsigned int fbo) : fbo(fbo) {
+	const char* defaultVertexShaderSource = "../../../res/shaders/default.vert";
+	const char* defaultFragmentShaderSource = "../../../res/shaders/default.frag";
+	defaultShader = Shader(defaultVertexShaderSource, defaultFragmentShaderSource);
+
 	for (int i = 0; i < 64; i++) {
 		float left = (i % 8 - 4) * .25f;
 		float right = (i % 8 - 3) * .25f;
@@ -195,6 +199,7 @@ Board::Board(unsigned int fbo) : fbo(fbo) {
 
 Board::Board(Board* base) {
 	for (int i = 0; i < 64; i++) board[i] = base->board[i];
+	defaultShader = base->defaultShader;
 }
 
 void print_threatmap(uint64_t map) {
@@ -281,20 +286,19 @@ void Board::printBoard(std::string& s) {
 	}
 }
 
-void Board::printBoardImage(unsigned int shaderProgram) {
+void Board::printBoardImage() {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
-		std::cerr << "Printing new Board...................\n";
 		for (int i = 0; i < 64; i++) {
 			float left = (i % 8 - 4) * .25f;
 			float top = (i / 8 - 3) * .25f;
 			glm::vec3 top_left = glm::vec3(left, top, 0.f);
 			Square s = Square(top_left, (i % 2) ^ (i / 8 % 2), board[i]);
-			s.draw(shaderProgram, fbo);
+			s.draw(defaultShader, fbo);
 		}
 	
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -303,11 +307,10 @@ void Board::printBoardImage(unsigned int shaderProgram) {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
-		std::cerr << "===================================================================\n";
 	}
 }
 
-void Board::render(unsigned int shaderProgram) {
+void Board::render() {
 	std::string board_string;
 	printBoard(board_string);
 	ImGui::Begin("Play window");
@@ -315,6 +318,6 @@ void Board::render(unsigned int shaderProgram) {
 	ImGui::End();
 
 	
-	printBoardImage(shaderProgram); 
+	printBoardImage(); 
 	ImGui::End(); 
 }
