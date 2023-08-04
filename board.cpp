@@ -296,7 +296,6 @@ void Board::printBoardImage(Shader* shader) {
 			Square s = Square(top_left, (i % 2) ^ (i / 8 % 2), board[i]);
 			s.draw(shader, fbo);
 		}
-		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
 	
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);

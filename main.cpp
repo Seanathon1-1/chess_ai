@@ -53,7 +53,6 @@ int main() {
 
     // Initialization for our program's graphical components
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    Shader defaultShader = Shader("../../../res/shaders/default.vert", "../../../res/shaders/default.frag");
     unsigned int frame_buffer_object;
     glGenFramebuffers(1, &frame_buffer_object);
     //glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_object);
@@ -63,7 +62,7 @@ int main() {
     Shader* defaultShader = new Shader(defaultVertexShaderSource, defaultFragmentShaderSource);
 
     glBindVertexArray(0);
-
+    Game game(frame_buffer_object);
     while (!glfwWindowShouldClose(window)) {
         //cout << ImGui::GetWindowSize().x << ", " << ImGui::GetWindowSize().y << endl;
         

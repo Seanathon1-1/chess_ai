@@ -7,7 +7,7 @@
 
 // Taken from insane coding
 std::string get_file_contents(const char* filepath) {
-	std::ifstream in(filepath, std::ios::binary);
+	std::ifstream in(filepath, std::ios::in | std::ios::binary);
 	if (in) {
 		std::string contents;
 		in.seekg(0, std::ios::end);
@@ -20,10 +20,10 @@ std::string get_file_contents(const char* filepath) {
 	throw errno;
 }
 
-Shader::Shader(const char* vertexFilename, const char* fragmentFilename) {
+Shader::Shader(const char* vertexFilepath, const char* fragmentFilepath) {
     // read in the shader files
-    std::string vertexSourceString = get_file_contents(vertexFilename);
-    std::string fragmentSourceString = get_file_contents(fragmentFilename);
+    std::string vertexSourceString = get_file_contents(vertexFilepath);
+    std::string fragmentSourceString = get_file_contents(fragmentFilepath);
     const char* vertexSource = vertexSourceString.c_str();
     const char* fragmentSource = fragmentSourceString.c_str();
 
