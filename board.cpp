@@ -2,11 +2,12 @@
 #include "imgui.h"
 #include "gl/glew.h"
 #include <cctype>
+#include "VAO.h"
 
 #include <Windows.h>
 
 #define WHITE_SQUARE_COLOR glm::vec3(1.f)
-#define BLACK_SQUARE_COLOR glm::vec3(.1f, 0.f, .1f)
+#define BLACK_SQUARE_COLOR glm::vec3(.1f, 0.f, .2f)
 #define SQUARE_SIZE .25f
 
 glm::vec3 square_top_right_offset = glm::vec3(SQUARE_SIZE, 0.f, 0.f);
@@ -286,7 +287,7 @@ void Board::printBoardImage(Shader* shader) {
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+	 
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
 		for (int i = 0; i < 64; i++) {
 			float left = (i % 8 - 4) * .25f;
@@ -295,6 +296,7 @@ void Board::printBoardImage(Shader* shader) {
 			Square s = Square(top_left, (i % 2) ^ (i / 8 % 2), board[i]);
 			s.draw(shader, fbo);
 		}
+		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
 	
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);

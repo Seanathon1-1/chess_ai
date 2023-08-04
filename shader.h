@@ -4,8 +4,6 @@
 class Shader {
 public:
 	GLuint ID;
-
-	Shader() {}
 	Shader(const char*, const char*);
 	~Shader();
 	void activate();

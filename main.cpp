@@ -9,6 +9,7 @@
 #include "GLFW/glfw3.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "game.h"
+#include "shader.h"
 
 using namespace std;
 
@@ -50,11 +51,9 @@ int main() {
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
-    float vertices[] = {
-            -0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-             0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-             0.0f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f };
-
+    // Initialization for our program's graphical components
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    Shader defaultShader = Shader("../../../res/shaders/default.vert", "../../../res/shaders/default.frag");
     unsigned int frame_buffer_object;
     glGenFramebuffers(1, &frame_buffer_object);
     //glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_object);
@@ -65,7 +64,6 @@ int main() {
 
     glBindVertexArray(0);
 
-    Game game(frame_buffer_object);
     while (!glfwWindowShouldClose(window)) {
         //cout << ImGui::GetWindowSize().x << ", " << ImGui::GetWindowSize().y << endl;
         
