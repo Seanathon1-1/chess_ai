@@ -15,7 +15,7 @@ glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-void Square::draw(Shader shader, unsigned int fbo, bool debug = false) {
+void Square::draw(Shader* shader, unsigned int fbo, bool debug = false) {
 	unsigned int stride = 6;
 	bool has_texture = false;
 	
@@ -109,21 +109,17 @@ void Square::draw(Shader shader, unsigned int fbo, bool debug = false) {
 		glEnableVertexAttribArray(2);
 	}*/
 
-	shader.activate();
+	shader->activate();
 	glBindVertexArray(vertex_array);
 	glDrawArrays(GL_TRIANGLES, 0, vertex_buffer_data.size() / 2);
 
-	shader.deactivate();
+	shader->deactivate();
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &vertex_array);
 	glDeleteBuffers(1, &vertex_buffer); 
 }
 
 Board::Board(unsigned int fbo) : fbo(fbo) {
-	const char* defaultVertexShaderSource = "../../../res/shaders/default.vert";
-	const char* defaultFragmentShaderSource = "../../../res/shaders/default.frag";
-	defaultShader = Shader(defaultVertexShaderSource, defaultFragmentShaderSource);
-
 	for (int i = 0; i < 64; i++) {
 		float left = (i % 8 - 4) * .25f;
 		float right = (i % 8 - 3) * .25f;
@@ -199,7 +195,6 @@ Board::Board(unsigned int fbo) : fbo(fbo) {
 
 Board::Board(Board* base) {
 	for (int i = 0; i < 64; i++) board[i] = base->board[i];
-	defaultShader = base->defaultShader;
 }
 
 void print_threatmap(uint64_t map) {
@@ -286,7 +281,7 @@ void Board::printBoard(std::string& s) {
 	}
 }
 
-void Board::printBoardImage() {
+void Board::printBoardImage(Shader* shader) {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
@@ -298,7 +293,7 @@ void Board::printBoardImage() {
 			float top = (i / 8 - 3) * .25f;
 			glm::vec3 top_left = glm::vec3(left, top, 0.f);
 			Square s = Square(top_left, (i % 2) ^ (i / 8 % 2), board[i]);
-			s.draw(defaultShader, fbo);
+			s.draw(shader, fbo);
 		}
 	
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -310,7 +305,7 @@ void Board::printBoardImage() {
 	}
 }
 
-void Board::render() {
+void Board::render(Shader* shader) {
 	std::string board_string;
 	printBoard(board_string);
 	ImGui::Begin("Play window");
@@ -318,6 +313,6 @@ void Board::render() {
 	ImGui::End();
 
 	
-	printBoardImage(); 
+	printBoardImage(shader); 
 	ImGui::End(); 
 }

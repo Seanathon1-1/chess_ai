@@ -17,7 +17,7 @@ struct Square {
 	glm::vec3 top_left_corner;
 	bool is_black;
 	Piece piece;
-	void draw(Shader, unsigned int, bool);
+	void draw(Shader*, unsigned int, bool);
 };
 
 
@@ -28,7 +28,6 @@ private:
 	int promoting = -1;
  	// graphical components
 	std::vector<Square*> gSquares;
-	Shader defaultShader;
 	unsigned int gBoard;
 	unsigned int fbo;
 
@@ -38,7 +37,7 @@ public:
 	bool makeMove(Piece, int, int);
 	void promote(PieceType);
 	void printBoard(std::string&);
-	void printBoardImage();
+	void printBoardImage(Shader*);
 	inline Piece getPiece(int s) { return board[s]; }
-	void render();
+	void render(Shader*);
 };

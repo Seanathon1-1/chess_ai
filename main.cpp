@@ -59,6 +59,10 @@ int main() {
     glGenFramebuffers(1, &frame_buffer_object);
     //glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_object);
 
+    const char* defaultVertexShaderSource = "../../../res/shaders/default.vert";
+    const char* defaultFragmentShaderSource = "../../../res/shaders/default.frag";
+    Shader* defaultShader = new Shader(defaultVertexShaderSource, defaultFragmentShaderSource);
+
     glBindVertexArray(0);
 
     Game game(frame_buffer_object);
@@ -79,7 +83,7 @@ int main() {
 
         glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
         
-        game.render();
+        game.render(defaultShader);
 
 
 
@@ -94,6 +98,8 @@ int main() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    delete defaultShader;
 
     //board.play();
 
