@@ -53,11 +53,16 @@ int main() {
 
     // Initialization for our program's graphical components
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    Shader defaultShader = Shader("../../../res/shaders/default.vert", "../../../res/shaders/default.frag");
     unsigned int frame_buffer_object;
     glGenFramebuffers(1, &frame_buffer_object);
-    Game game(frame_buffer_object);
+    //glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_object);
 
+    const char* defaultVertexShaderSource = "../../../res/shaders/default.vert";
+    const char* defaultFragmentShaderSource = "../../../res/shaders/default.frag";
+    Shader* defaultShader = new Shader(defaultVertexShaderSource, defaultFragmentShaderSource);
+
+    glBindVertexArray(0);
+    Game game(frame_buffer_object);
     while (!glfwWindowShouldClose(window)) {
         //cout << ImGui::GetWindowSize().x << ", " << ImGui::GetWindowSize().y << endl;
         
@@ -74,8 +79,10 @@ int main() {
         ImGui::End();
 
         glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-
+        
         game.render(defaultShader);
+
+
 
         // Render imgui into screen
         ImGui::Render();
@@ -88,6 +95,10 @@ int main() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    delete defaultShader;
+
+    //board.play();
 
     glfwTerminate();
     return 0;

@@ -27,7 +27,7 @@ public:
 	Game(unsigned int);
 	Game(Game*);
 	void makeUserMove(std::string);
-	void render(Shader);
+	void render(Shader*);
 
 private:
 	void makeLegalMove(Piece, int, int);

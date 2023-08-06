@@ -6,7 +6,7 @@ cmake_minimum_required (VERSION 3.8)
 project ("chess_ai")
 
 # Add source to this project's executable.
-add_executable (chess_ai "main.cpp"  "board.h" "board.cpp"  "game.cpp" "game.h" "util.h"  "triangle.h" "triangle.cpp" "util.cpp" "VBO.h" "VAO.h" "EBO.h" "EBO.cpp" "VBO.cpp" "VAO.cpp" "shader.h" "shader.cpp")
+add_executable (chess_ai "main.cpp"  "board.h" "board.cpp"  "game.cpp" "game.h" "util.h"  "triangle.h" "triangle.cpp" "util.cpp" "shader.h" "shader.cpp" "VAO.h" "VAO.cpp" "VBO.h" "VBO.cpp" "EBO.h" "EBO.cpp" )
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET chess_ai PROPERTY CXX_STANDARD 20)

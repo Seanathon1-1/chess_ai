@@ -1,10 +1,9 @@
 #include "EBO.h"
 
-EBO::EBO(GLfloat* vertices, GLsizeiptr size) {
+EBO::EBO(GLuint* vertices, GLsizeiptr size) {
 	glGenBuffers(1, &ID);
 	bind();
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
-	unbind();
 }
 
 EBO::~EBO() {

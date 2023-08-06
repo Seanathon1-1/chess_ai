@@ -15,17 +15,12 @@ struct Piece {
 
 struct Square {
 	glm::vec3 top_left_corner;
-	glm::vec3 top_right_corner;
-	glm::vec3 bottom_left_corner;
-	glm::vec3 bottom_right_corner;
-	bool is_black;
+	bool is_dark;
 	Piece piece;
 
 public:
-	Square(glm::vec3, bool, Piece);
-	void draw(Shader, bool);
-	void drawTexture(std::string, unsigned int);
-	void draw(unsigned int, unsigned int, bool);
+	void draw(Shader*);
+	void drawTexture(Shader*);
 };
 
 
@@ -38,6 +33,7 @@ private:
 	std::vector<Square*> gSquares;
 	unsigned int gBoard;
 	unsigned int fbo;
+	Shader* pieceShader;
 
 public:
 	Board(unsigned int); // Creates new starting board
@@ -45,7 +41,7 @@ public:
 	bool makeMove(Piece, int, int);
 	void promote(PieceType);
 	void printBoard(std::string&);
-	void printBoardImage(Shader);
+	void printBoardImage(Shader*);
 	inline Piece getPiece(int s) { return board[s]; }
-	void render(Shader);
+	void render(Shader*);
 };

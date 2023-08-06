@@ -389,7 +389,7 @@ void Game::updateThreatMaps() {
  	}
 }
 
-void Game::render(Shader shader) {
+void Game::render(Shader* shader) {
 	ImGui::SetNextWindowPos(ImVec2(0, 0)); 
 	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
 	board.render(shader);

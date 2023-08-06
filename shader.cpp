@@ -1,8 +1,13 @@
 #include "shader.h"
+#include "gl/glew.h"
+#include "GLFW/glfw3.h"
+#include <fstream>
+#include <string>
+#include <cerrno>
 
 // Taken from insane coding
 std::string get_file_contents(const char* filepath) {
-	std::ifstream in(filepath, std::ios::binary);
+	std::ifstream in(filepath, std::ios::in | std::ios::binary);
 	if (in) {
 		std::string contents;
 		in.seekg(0, std::ios::end);
@@ -16,27 +21,31 @@ std::string get_file_contents(const char* filepath) {
 }
 
 Shader::Shader(const char* vertexFilepath, const char* fragmentFilepath) {
-	std::string vertexString = get_file_contents(vertexFilepath);
-	std::string fragmentString = get_file_contents(fragmentFilepath);
+    // read in the shader files
+    std::string vertexSourceString = get_file_contents(vertexFilepath);
+    std::string fragmentSourceString = get_file_contents(fragmentFilepath);
+    const char* vertexSource = vertexSourceString.c_str();
+    const char* fragmentSource = fragmentSourceString.c_str();
 
-	const char* vertexSource = vertexString.c_str();
-	const char* fragmentSource = fragmentString.c_str();
-
+    // create vertex shader
 	unsigned int vertexShader;
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexSource, NULL);
 	glCompileShader(vertexShader);
 
+    // create fragment shader
 	unsigned int fragmentShader;
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
 	glCompileShader(fragmentShader);
 
+    // link shaders together
 	ID = glCreateProgram();
 	glAttachShader(ID, vertexShader);
 	glAttachShader(ID, fragmentShader);
 	glLinkProgram(ID);
 
+    // cleanup
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 }
