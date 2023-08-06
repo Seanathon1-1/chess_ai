@@ -15,11 +15,11 @@ struct Piece {
 
 struct Square {
 	glm::vec3 top_left_corner;
-	bool is_black;
+	bool is_dark;
 	Piece piece;
 
 public:
-	void draw(Shader*, bool);
+	void draw(Shader*);
 	void drawTexture(Shader*);
 };
 

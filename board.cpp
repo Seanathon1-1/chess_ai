@@ -3,11 +3,12 @@
 #include "gl/glew.h"
 #include <cctype>
 #include "VAO.h"
+#include "EBO.h"
 
 #include <Windows.h>
 
-#define WHITE_SQUARE_COLOR glm::vec3(1.f)
-#define BLACK_SQUARE_COLOR glm::vec3(.1f, 0.f, .2f)
+#define LIGHT_SQUARE_COLOR glm::vec3(1.f)
+#define DARK_SQUARE_COLOR glm::vec3(.1f, 0.f, .2f)
 #define SQUARE_SIZE .25f
 
 glm::vec3 square_top_right_offset = glm::vec3(SQUARE_SIZE, 0.f, 0.f);
@@ -16,86 +17,51 @@ glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-void Square::draw(Shader* shader, bool debug = false) {
-	unsigned int stride = 6;
-	bool has_texture = false;
-	
-	GLuint vertex_buffer, vertex_array, element_buffer;
-	glGenVertexArrays(1, &vertex_array);
-	glGenBuffers(1, &vertex_buffer);
-	glGenBuffers(1, &element_buffer);
-
-	unsigned int indices[] = {0, 1, 2, 1, 2, 3};
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	std::vector<float> vertex_buffer_data;
-
+void Square::draw(Shader* shader) {
 	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
 	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
 	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
-	glm::vec3 color = (is_black) ? BLACK_SQUARE_COLOR : WHITE_SQUARE_COLOR;
+	glm::vec3 color = (is_dark) ? DARK_SQUARE_COLOR : LIGHT_SQUARE_COLOR;
 
-	if (debug) {
-		std::cerr << "Top left corner: ";
-		print_vec3(top_left_corner);
-		std::cerr << "Top right corner: ";
-		print_vec3(top_right_corner);
-		std::cerr << "Bottom left corner: ";
-		print_vec3(bottom_left_corner);
-		std::cerr << "Bottom right corner: ";
-		print_vec3(bottom_right_corner);
-	}
+	float vertices[] = {
+		top_left_corner.x, top_left_corner.y, top_left_corner.z, color.x, color.y, color.z,
+		top_right_corner.x, top_right_corner.y, top_right_corner.z, color.x, color.y, color.z,
+		bottom_left_corner.x, bottom_left_corner.y, bottom_left_corner.z, color.x, color.y, color.z,
+		bottom_right_corner.x, bottom_right_corner.y, bottom_right_corner.z, color.x, color.y, color.z
+	};
+	unsigned int indices[] = {0, 1, 2, 1, 2, 3};
 
-	std::vector<glm::vec3*> vertices = {&top_left_corner, &top_right_corner, &bottom_left_corner, &top_right_corner, &bottom_left_corner, &bottom_right_corner};
-	for (auto vertex : vertices) {
-		vertex_buffer_data.push_back(vertex->x);
-		vertex_buffer_data.push_back(vertex->y);
-		vertex_buffer_data.push_back(vertex->z);
-		vertex_buffer_data.push_back(color.x);
-		vertex_buffer_data.push_back(color.y);
-		vertex_buffer_data.push_back(color.z);
-	}
+	/*print_vec3(top_left_corner);
+	print_vec3(top_right_corner);
+	print_vec3(bottom_left_corner);
+	print_vec3(bottom_right_corner);*/
 
-	/*std::vector<float> top_left_array = {top_left_corner.x, top_left_corner.y, top_left_corner.z, color.x, color.y, color.z};
-	std::vector<float> top_right_array = { top_right_corner.x, top_right_corner.y, top_right_corner.z, color.x, color.y, color.z };
-	std::vector<float> bottom_left_array = { bottom_left_corner.x, bottom_left_corner.y, bottom_left_corner.z, color.x, color.y, color.z };
-	std::vector<float> bottom_right_array = { bottom_right_corner.x, bottom_left_corner.y, bottom_left_corner.z, color.x, color.y, color.z };*/
-	  
-	/*if (piece.kind != open) {
-		
-	}*/
-	
-	glBindVertexArray(vertex_array);
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-	glBufferData(GL_ARRAY_BUFFER, vertex_buffer_data.size() * sizeof(float), vertex_buffer_data.data(), GL_STATIC_DRAW);
+	VAO* vertex_array = new VAO();
+	vertex_array->bind();
+	VBO* vertex_buffer = new VBO(vertices, sizeof(vertices));
+	EBO* element_buffer = new EBO(indices, sizeof(indices));
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	vertex_array->linkAttribute(vertex_buffer, 0, 3, GL_FLOAT, 6 * sizeof(float), (void*)0);
+	vertex_array->linkAttribute(vertex_buffer, 1, 3, GL_FLOAT, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	shader->activate();
-	glBindVertexArray(vertex_array);
-	glDrawArrays(GL_TRIANGLES, 0, vertex_buffer_data.size() / 2);
+	vertex_array->bind();
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	shader->deactivate();
-	glBindVertexArray(0);
-	glDeleteVertexArrays(1, &vertex_array);
-	glDeleteBuffers(1, &vertex_buffer); 
-	glDeleteBuffers(1, &element_buffer);
+	vertex_array->unbind();
+	vertex_buffer->unbind();
+	element_buffer->unbind();
+	delete vertex_array;
+	delete vertex_buffer;
+	delete element_buffer;
 }
 
 void Square::drawTexture(Shader* shader) {
-	GLuint vertex_buffer, vertex_array, element_buffer;
-	glGenVertexArrays(1, &vertex_array);
-	glGenBuffers(1, &vertex_buffer);
-	glGenBuffers(1, &element_buffer);
-
 	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
 	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
 	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
-	
+
 	// buffers' data 
 	GLfloat vertices[] = {
 		top_left_corner.x, top_left_corner.y, top_left_corner.z - .1f, 0.f, 1.f,
@@ -105,16 +71,13 @@ void Square::drawTexture(Shader* shader) {
 	};
 	GLuint indices[] = { 0, 1, 2, 1, 2, 3 };
 
-	glBindVertexArray(vertex_array);
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	VAO* vertex_array = new VAO();
+	vertex_array->bind();
+	VBO* vertex_buffer = new VBO(vertices, sizeof(vertices));
+	EBO* element_buffer = new EBO(indices, sizeof(indices));
+
+	vertex_array->linkAttribute(vertex_buffer, 0, 3, GL_FLOAT, 5 * sizeof(float), (void*)0);
+	vertex_array->linkAttribute(vertex_buffer, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
 	// setup opengl texture object 
 	int width, height, nChannels;
@@ -148,16 +111,19 @@ void Square::drawTexture(Shader* shader) {
 	glEnable(GL_BLEND);
 	glUniform1i(glGetUniformLocation(shader->ID, "ourTexture"), 0);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glBindVertexArray(vertex_array);
+	vertex_array->bind();
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	shader->deactivate();
 	glDisable(GL_BLEND);
-	glDeleteVertexArrays(1, &vertex_array);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	vertex_array->unbind();
+	vertex_buffer->unbind();
+	element_buffer->unbind();
 	glDeleteTextures(1, &texture);
-	glDeleteBuffers(1, &vertex_buffer);
-	glDeleteBuffers(1, &element_buffer);
-
+	delete vertex_array;
+	delete vertex_buffer;
+	delete element_buffer;
 }
 
 Board::Board(unsigned int fbo) : fbo(fbo) {
