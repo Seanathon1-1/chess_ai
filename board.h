@@ -19,8 +19,8 @@ struct Square {
 	Piece piece;
 
 public:
-	void draw(Shader*, unsigned int, bool);
-	//void drawTexture(std::string, unsigned int);
+	void draw(Shader*, bool);
+	void drawTexture(Shader*);
 };
 
 
@@ -33,6 +33,7 @@ private:
 	std::vector<Square*> gSquares;
 	unsigned int gBoard;
 	unsigned int fbo;
+	Shader* pieceShader;
 
 public:
 	Board(unsigned int); // Creates new starting board

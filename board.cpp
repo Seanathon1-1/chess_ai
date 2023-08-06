@@ -16,7 +16,7 @@ glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
-void Square::draw(Shader* shader, unsigned int fbo, bool debug = false) {
+void Square::draw(Shader* shader, bool debug = false) {
 	unsigned int stride = 6;
 	bool has_texture = false;
 	
@@ -62,39 +62,8 @@ void Square::draw(Shader* shader, unsigned int fbo, bool debug = false) {
 	std::vector<float> bottom_left_array = { bottom_left_corner.x, bottom_left_corner.y, bottom_left_corner.z, color.x, color.y, color.z };
 	std::vector<float> bottom_right_array = { bottom_right_corner.x, bottom_left_corner.y, bottom_left_corner.z, color.x, color.y, color.z };*/
 	  
-	int width, height, nChannels;
 	/*if (piece.kind != open) {
-		// setup opengl texture object
-		unsigned int texture;
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		std::string texture_path = "../../../res/";
-		texture_path.append((piece.color == black) ? "black_" : "white_");
-		texture_path += piece_chars[piece.kind];
-		texture_path.append(".png");
-		unsigned char* data = stbi_load(texture_path.c_str(), &width, &height, &nChannels, 0);
-		if (data) {
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-			glGenerateMipmap(GL_TEXTURE_2D);
-		}
-		else {
-			TCHAR buffer[MAX_PATH] = { 0 };
-			GetModuleFileName(NULL, buffer, MAX_PATH);
-			std::cerr << "Fail!: " << texture_path << "\n";
-			std::cerr << "Working Directory: " << std::string(buffer) << std::endl;
-		}
-		stbi_image_free(data);
-
-		top_left_array.push_back(0.f); top_left_array.push_back(1.f);
-		top_right_array.push_back(1.f); top_right_array.push_back(1.f);
-		bottom_left_array.push_back(0.f); bottom_left_array.push_back(0.f);
-		bottom_right_array.push_back(1.f); bottom_right_array.push_back(0.f);
-		stride = 8;
+		
 	}*/
 	
 	glBindVertexArray(vertex_array);
@@ -105,10 +74,6 @@ void Square::draw(Shader* shader, unsigned int fbo, bool debug = false) {
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
-	/*if (has_texture) {
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(6 * sizeof(float)));
-		glEnableVertexAttribArray(2);
-	}*/
 
 	shader->activate();
 	glBindVertexArray(vertex_array);
@@ -118,6 +83,81 @@ void Square::draw(Shader* shader, unsigned int fbo, bool debug = false) {
 	glBindVertexArray(0);
 	glDeleteVertexArrays(1, &vertex_array);
 	glDeleteBuffers(1, &vertex_buffer); 
+	glDeleteBuffers(1, &element_buffer);
+}
+
+void Square::drawTexture(Shader* shader) {
+	GLuint vertex_buffer, vertex_array, element_buffer;
+	glGenVertexArrays(1, &vertex_array);
+	glGenBuffers(1, &vertex_buffer);
+	glGenBuffers(1, &element_buffer);
+
+	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
+	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
+	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
+	
+	// buffers' data 
+	GLfloat vertices[] = {
+		top_left_corner.x, top_left_corner.y, top_left_corner.z - .1f, 0.f, 1.f,
+		top_right_corner.x, top_right_corner.y, top_right_corner.z - .1f, 1.f, 1.f,
+		bottom_left_corner.x, bottom_left_corner.y, bottom_left_corner.z - .1f, 0.f, 0.f,
+		bottom_right_corner.x, bottom_right_corner.y, bottom_right_corner.z - .1f, 1.f, 0.f
+	};
+	GLuint indices[] = { 0, 1, 2, 1, 2, 3 };
+
+	glBindVertexArray(vertex_array);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	// setup opengl texture object 
+	int width, height, nChannels;
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	std::string texture_path = "../../../res/textures/";
+	texture_path.append((piece.color == black) ? "black_" : "white_");
+	texture_path += piece_chars[piece.kind];
+	texture_path.append(".png");
+	unsigned char* data = stbi_load(texture_path.c_str(), &width, &height, &nChannels, 0);
+	if (data) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else {
+		TCHAR buffer[MAX_PATH] = { 0 };
+		GetModuleFileName(NULL, buffer, MAX_PATH);
+		std::cerr << "Fail!: " << texture_path << "\n";
+		std::cerr << "Working Directory: " << std::string(buffer) << std::endl;
+	}
+	stbi_image_free(data);
+
+
+	shader->activate();
+	glEnable(GL_BLEND);
+	glUniform1i(glGetUniformLocation(shader->ID, "ourTexture"), 0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindVertexArray(vertex_array);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	shader->deactivate();
+	glDisable(GL_BLEND);
+	glDeleteVertexArrays(1, &vertex_array);
+	glDeleteTextures(1, &texture);
+	glDeleteBuffers(1, &vertex_buffer);
+	glDeleteBuffers(1, &element_buffer);
+
 }
 
 Board::Board(unsigned int fbo) : fbo(fbo) {
@@ -126,14 +166,6 @@ Board::Board(unsigned int fbo) : fbo(fbo) {
 		float right = (i % 8 - 3) * .25f;
 		float top = (i / 8 - 3) * .25f;
 		float bottom = (i / 8 - 4) * .25f;
-		
-		/*Square* sqr = new Square();
-		sqr->top_left = glm::vec3(left, top, 0.0f);
-		sqr->top_right = glm::vec3(right, top, 0.0f);
-		sqr->bottom_left = glm::vec3(left, bottom, 0.0f);
-		sqr->bottom_right = glm::vec3(right, bottom, 0.0f);
-		sqr->color = ((i % 2) ^ (i / 8 % 2)) ? glm::vec3(0.1f, 0.0f, 0.0f) : glm::vec3(1.0f, 1.0f, 1.0f);
-		gSquares.push_back(sqr);*/
 	}
 
  	memset(&board, 0, sizeof(Piece) * 64);
@@ -192,6 +224,8 @@ Board::Board(unsigned int fbo) : fbo(fbo) {
 		std::cout << "Frame buffer failed.\n" << std::endl;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	pieceShader = new Shader("../../../res/shaders/piece.vert", "../../../res/shaders/piece.frag");
 }
 
 Board::Board(Board* base) {
@@ -229,7 +263,7 @@ bool Board::makeMove(Piece p, int s, int d) {
 				board[BIDX(3, 0)] = board[BIDX(0, 0)];
 				board[BIDX(0, 0)] = empty_sqr;
 			}
-		}
+		}  
 		if (p.color == black) {
 			if (d % 8 == 6) {
 				board[BIDX(5, 7)] = board[BIDX(7, 7)];
@@ -291,10 +325,16 @@ void Board::printBoardImage(Shader* shader) {
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
 		for (int i = 0; i < 64; i++) {
 			float left = (i % 8 - 4) * .25f;
-			float top = (i / 8 - 3) * .25f;
+			float top = (i / -8 + 4) * .25f;
 			glm::vec3 top_left = glm::vec3(left, top, 0.f);
-			Square s = Square(top_left, (i % 2) ^ (i / 8 % 2), board[i]);
-			s.draw(shader, fbo);
+			bool isBlack = (i % 2) ^ (i / 8 % 2);
+			Piece p = board[i];
+			Square s = Square(top_left, isBlack, p);
+			s.draw(shader);
+
+			if (p.kind != open) {
+				s.drawTexture(pieceShader);
+			}
 		}
 	
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
