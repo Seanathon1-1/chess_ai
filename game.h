@@ -6,7 +6,7 @@
 
 class Game {
 private: 
-	Board board = Board(1);
+	Board* board = new Board(1);
 	bool white_check = 0;
 	bool black_check = 0;
 	int white_king;
@@ -26,6 +26,7 @@ private:
 public:
 	Game(unsigned int);
 	Game(Game*);
+	~Game();
 	void makeUserMove(std::string);
 	void render(Shader*);
 

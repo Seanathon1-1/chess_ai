@@ -33,11 +33,12 @@ private:
 	std::vector<Square*> gSquares;
 	unsigned int gBoard;
 	unsigned int fbo;
-	Shader* pieceShader;
+	Shader* pieceShader = nullptr;
 
 public:
 	Board(unsigned int); // Creates new starting board
 	Board(Board*); // Copies board state
+	~Board();
 	bool makeMove(Piece, int, int);
 	void promote(PieceType);
 	void printBoard(std::string&);

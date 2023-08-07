@@ -198,6 +198,11 @@ Board::Board(Board* base) {
 	for (int i = 0; i < 64; i++) board[i] = base->board[i];
 }
 
+Board::~Board() {
+	if (pieceShader) delete pieceShader;
+	for (auto s : gSquares) delete s;
+}
+
 void print_threatmap(uint64_t map) {
 	std::cout << HORZ_LINE;
 	int sqr;
@@ -289,18 +294,19 @@ void Board::printBoardImage(Shader* shader) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	 
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
-		for (int i = 0; i < 64; i++) {
+		for (int i = 0; i < 64 ; i++) {
 			float left = (i % 8 - 4) * .25f;
 			float top = (i / -8 + 4) * .25f;
 			glm::vec3 top_left = glm::vec3(left, top, 0.f);
 			bool isBlack = (i % 2) ^ (i / 8 % 2);
 			Piece p = board[i];
-			Square s = Square(top_left, isBlack, p);
-			s.draw(shader);
+			Square* s = new Square(top_left, isBlack, p);
+			s->draw(shader);
 
 			if (p.kind != open) {
-				s.drawTexture(pieceShader);
+				s->drawTexture(pieceShader);
 			}
+			delete s;
 		}
 	
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

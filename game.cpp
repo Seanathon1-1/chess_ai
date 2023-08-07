@@ -2,14 +2,14 @@
 #include "imgui.h"
 
 Game::Game(unsigned int fbo) {
-	board = Board(fbo);
+	board = new Board(fbo);
 	whose_turn = white;
 	white_king = 4;
 	black_king = 60;
 }
 
 Game::Game(Game* base) {
-	board = Board(&base->board);
+	board = new Board(base->board);
 	white_check = base->white_check;
 	black_check = base->black_check;
 	white_king = base->white_king;
@@ -23,6 +23,10 @@ Game::Game(Game* base) {
 	black_short_castle = base->black_short_castle;
 	white_long_castle = base->white_long_castle;
 	black_long_castle = base->black_long_castle;
+}
+
+Game::~Game() {
+	delete board;
 }
 
 void Game::makeUserMove(std::string move) {
@@ -52,7 +56,7 @@ void Game::makeUserMove(std::string move) {
 
 	// check that there is a piece on the initial square
 	int select_idx = BIDX(sf, sr);
-	Piece selected = board.getPiece(select_idx);
+	Piece selected = board->getPiece(select_idx);
 	if (selected.kind == open) {
 		std::cout << "No piece selected to move.\n";
 		return;
@@ -66,7 +70,7 @@ void Game::makeUserMove(std::string move) {
 
 	// check if the destination is a legal move
 	int dest_idx = BIDX(df, dr);
-	Piece destination = board.getPiece(dest_idx);
+	Piece destination = board->getPiece(dest_idx);
 	std::vector<int> moves_possible;
 	legalPieceMoves(&moves_possible, selected, sf, sr);
 	bool move_exists = 0;
@@ -102,7 +106,7 @@ void Game::makeUserMove(std::string move) {
 }
 
 void Game::makeLegalMove(Piece p, int src, int dest) {
-	wait_for_promote |= board.makeMove(p, src, dest);
+	wait_for_promote |= board->makeMove(p, src, dest);
 
 	// Look for check
 	updateThreatMaps();
@@ -149,8 +153,8 @@ void Game::makeLegalMove(Piece p, int src, int dest) {
 
 void Game::allLegalMoves(std::vector<int>* moves, Color c) {
 	for (int i = 0; i < 64; i++) {
-		if (board.getPiece(i).color == c) {
-			legalPieceMoves(moves, board.getPiece(i), i % 8, i / 8);
+		if (board->getPiece(i).color == c) {
+			legalPieceMoves(moves, board->getPiece(i), i % 8, i / 8);
 		}
 	}
 }
@@ -166,12 +170,12 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 
 		// normal move
 		square = BIDX(file, rank + (1 * p.color));
-		if (board.getPiece(square).kind == open) {
+		if (board->getPiece(square).kind == open) {
 			possible_moves.push_back(square);
 		}
 		// pawn power
 		square = BIDX(file, rank + (2 * p.color));
-		if (rank == home_rank && board.getPiece(square).kind == open) {
+		if (rank == home_rank && board->getPiece(square).kind == open) {
 			possible_moves.push_back(square);
 		}
 
@@ -238,9 +242,9 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 void Game::pawnSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
 	int square;
 	square = BIDX(file - 1, rank + (1 * c));
-	if (file != 0 && (board.getPiece(square).color == (c * -1) || threat)) moves->push_back(square);
+	if (file != 0 && (board->getPiece(square).color == (c * -1) || threat)) moves->push_back(square);
 	square = BIDX(file + 1, rank + (1 * c));
-	if (file != 7 && (board.getPiece(square).color == (c * -1) || threat)) moves->push_back(square);
+	if (file != 7 && (board->getPiece(square).color == (c * -1) || threat)) moves->push_back(square);
 }
 
 void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
@@ -253,7 +257,7 @@ void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bo
 		r = rank + rank_moves[i];
 		if (ON_BOARD(f) && ON_BOARD(r)) {
 			square = BIDX(f, r);
-			if (board.getPiece(square).color != c || threat) moves->push_back(square);
+			if (board->getPiece(square).color != c || threat) moves->push_back(square);
 		}
 	}
 }
@@ -265,8 +269,8 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 	f = file - 1; r = rank + 1;
 	while (f >= 0 && r < 8) {
 		square = BIDX(f, r);
-		if (board.getPiece(square).kind == open) moves->push_back(square);
-		else if (board.getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square).kind == open) moves->push_back(square);
+		else if (board->getPiece(square).color == c && !threat) break;
 		else { moves->push_back(square); break; }
 		f--; r++;
 	}
@@ -275,8 +279,8 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 	f = file + 1; r = rank + 1;
 	while (f < 8 && r < 8) {
 		square = BIDX(f, r);
-		if (board.getPiece(square).kind == open) moves->push_back(square);
-		else if (board.getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square).kind == open) moves->push_back(square);
+		else if (board->getPiece(square).color == c && !threat) break;
 		else { moves->push_back(square); break; }
 		f++; r++;
 	}
@@ -285,8 +289,8 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 	f = file - 1; r = rank - 1;
 	while (f >= 0 && r >= 0) {
 		square = BIDX(f, r);
-		if (board.getPiece(square).kind == open) moves->push_back(square);
-		else if (board.getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square).kind == open) moves->push_back(square);
+		else if (board->getPiece(square).color == c && !threat) break;
 		else { moves->push_back(square); break; }
 		f--; r--;
 	}
@@ -295,8 +299,8 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 	f = file + 1; r = rank - 1;
 	while (f < 8 && r >= 0) {
 		square = BIDX(f, r);
-		if (board.getPiece(square).kind == open) moves->push_back(square);
-		else if (board.getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square).kind == open) moves->push_back(square);
+		else if (board->getPiece(square).color == c && !threat) break;
 		else { moves->push_back(square); break; }
 		f++; r--;
 	}
@@ -304,36 +308,35 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 
 void Game::rookSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
 	int f; int r; int square;
-
 	// left
 	for (f = file - 1; f >= 0; f--) {
 		square = BIDX(f, rank);
-		if (board.getPiece(square).kind == open) moves->push_back(square);
-		else if (board.getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square).kind == open) moves->push_back(square);
+		else if (board->getPiece(square).color == c && !threat) break;
 		else { moves->push_back(square); break; }
 	}
 
 	// right
 	for (f = file + 1; f < 8; f++) {
 		square = BIDX(f, rank);
-		if (board.getPiece(square).kind == open) moves->push_back(square);
-		else if (board.getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square).kind == open) moves->push_back(square);
+		else if (board->getPiece(square).color == c && !threat) break;
 		else { moves->push_back(square); break; }
 	}
 
 	// up
 	for (r = rank + 1; r < 8; r++) {
 		square = BIDX(file, r);
-		if (board.getPiece(square).kind == open) moves->push_back(square);
-		else if (board.getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square).kind == open) moves->push_back(square);
+		else if (board->getPiece(square).color == c && !threat) break;
 		else { moves->push_back(square); break; }
 	}
 
 	// down
 	for (r = rank - 1; r >= 0; r--) {
 		square = BIDX(file, r);
-		if (board.getPiece(square).kind == open) moves->push_back(square);
-		else if (board.getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square).kind == open) moves->push_back(square);
+		else if (board->getPiece(square).color == c && !threat) break;
 		else { moves->push_back(square); break; }
 	}
 }
@@ -348,7 +351,7 @@ void Game::kingSights(std::vector<int>* moves, int file, int rank, Color c, bool
 		r = rank + rank_moves[i];
 		if (ON_BOARD(f) && ON_BOARD(r)) {
 			square = BIDX(f, r);
-			if (board.getPiece(square).color != c || threat) moves->push_back(square);
+			if (board->getPiece(square).color != c || threat) moves->push_back(square);
 		}
 	}
 }
@@ -359,7 +362,7 @@ void set_bit(uint64_t* map, uint8_t bit) {
 	}
 	*map |= (1ULL << bit);
 }
-
+ 
 void Game::updateThreatMaps() {
 	white_threat_map = 0ULL;
 	black_threat_map = 0ULL;
@@ -370,7 +373,7 @@ void Game::updateThreatMaps() {
 	int f; int r;
 	for (int i = 0; i < 64; i++) {
 		squares.clear();
-		piece = board.getPiece(i);
+		piece = board->getPiece(i);
 		if (piece.kind == open) continue;
 		threat_map = (piece.color == white) ? &white_threat_map : &black_threat_map;
 
@@ -392,7 +395,7 @@ void Game::updateThreatMaps() {
 void Game::render(Shader* shader) {
 	ImGui::SetNextWindowPos(ImVec2(0, 0)); 
 	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-	board.render(shader);
+	board->render(shader);
 	// Handle user entered moves
 	char move[16] = "";
 	bool moveEntered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);
@@ -407,7 +410,7 @@ void Game::render(Shader* shader) {
 		if (ImGui::Button("Bishop")) promote_to = bishop; ImGui::SameLine();
 
 		if (promote_to != open) {
-			board.promote(promote_to);
+			board->promote(promote_to);
 			wait_for_promote = 0;
 		}
 	}
