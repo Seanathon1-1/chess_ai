@@ -39,11 +39,10 @@ int main() {
         cerr << "Failed to initialize GLEW" << endl;
         return NULL;
     }
-
-    // Set swap interval to 1.
+    
     glfwSwapInterval(0);
         
-    // imgui init
+    // ImGUI init
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 460");
@@ -55,34 +54,30 @@ int main() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     unsigned int frame_buffer_object;
     glGenFramebuffers(1, &frame_buffer_object);
-    //glBindFramebuffer(GL_FRAMEBUFFER, frame_buffer_object);
 
+    // Create our default shader
     const char* defaultVertexShaderSource = "../../../res/shaders/default.vert";
     const char* defaultFragmentShaderSource = "../../../res/shaders/default.frag";
     Shader* defaultShader = new Shader(defaultVertexShaderSource, defaultFragmentShaderSource);
 
-    glBindVertexArray(0);
+    // Let's get this game going!
     Game game(frame_buffer_object);
     while (!glfwWindowShouldClose(window)) {
-        //cout << ImGui::GetWindowSize().x << ", " << ImGui::GetWindowSize().y << endl;
-        
         glfwPollEvents();
 
-        // starts imgui frame
+        // Starts ImGUI frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // imgui components
+        // ImGUI components
         ImGui::Begin("Hello world!");
         ImGui::Text("Hey window!");
         ImGui::End();
 
+        // Clear the screen and render our game
         glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-        
         game.render(defaultShader);
-
-
 
         // Render imgui into screen
         ImGui::Render();
@@ -92,14 +87,12 @@ int main() {
         glfwSwapBuffers(window);
     }
      
+    // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-
     delete defaultShader;
-
-    //board.play();
-
     glfwTerminate();
+    
     return 0;
 }
