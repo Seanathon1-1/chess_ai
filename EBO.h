@@ -2,6 +2,7 @@
 
 #include <gl/glew.h>
 
+// Wrapper class for opengl Element Buffer Objects
 class EBO {
 public:
 	GLuint ID;

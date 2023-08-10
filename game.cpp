@@ -294,7 +294,7 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 *             threat - Optional, defaults to false. Are we checking threat maps or not?
 * Description: Looks at the possible moves for a pawn and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::pawnSights(std::vector<int>* moves, int file, int rank, Color c, bool threat = false) {
+void Game::pawnSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
 	int square;
 	square = BIDX(file - 1, rank + (1 * c));
 	if (file != 0 && (board->getPiece(square).color == (c * -1) || threat)) moves->push_back(square);
@@ -312,7 +312,7 @@ void Game::pawnSights(std::vector<int>* moves, int file, int rank, Color c, bool
 *             threat - Optional, defaults to false. Are we checking threat maps or not?
 * Description: Looks at the possible moves for a knight and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bool threat = false) {
+void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
 	int file_moves[8] = { -2, -2, -1, -1, 1, 1, 2, 2 };
 	int rank_moves[8] = { -1, 1, -2, 2, -2, 2, -1, 1 };
 
@@ -337,7 +337,7 @@ void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bo
 *             threat - Optional, defaults to false. Are we checking threat maps or not?
 * Description: Looks at the possible moves for a bishop and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bool threat = false) {
+void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
 	int f; int r; int square;
 
 	// We assume north to be in the positive rank direction (ie towards rank 8)
@@ -392,7 +392,7 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 *             threat - Optional, defaults to false. Are we checking threat maps or not?
 * Description: Looks at the possible moves for a rook and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::rookSights(std::vector<int>* moves, int file, int rank, Color c, bool threat = false) {
+void Game::rookSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
 	int f; int r; int square;
 	// Left
 	for (f = file - 1; f >= 0; f--) {
@@ -437,7 +437,7 @@ void Game::rookSights(std::vector<int>* moves, int file, int rank, Color c, bool
 *             threat - Optional, defaults to false. Are we checking threat maps or not?
 * Description: Looks at the possible moves for a king and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::kingSights(std::vector<int>* moves, int file, int rank, Color c, bool threat = false) {
+void Game::kingSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
 	int file_moves[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
 	int rank_moves[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
 

@@ -40,10 +40,10 @@ private:
 	void makeLegalMove(Piece, int, int);
 	void allLegalMoves(std::vector<int>*, Color);
 	void legalPieceMoves(std::vector<int>*, Piece, int, int);
-	void pawnSights(std::vector<int>*, int, int, Color, bool);
-	void knightSights(std::vector<int>*, int, int, Color, bool);
-	void bishopSights(std::vector<int>*, int, int, Color, bool);
-	void rookSights(std::vector<int>*, int, int, Color, bool);
-	void kingSights(std::vector<int>*, int, int, Color, bool);
+	void pawnSights(std::vector<int>*, int, int, Color, bool threat = false);
+	void knightSights(std::vector<int>*, int, int, Color, bool threat = false);
+	void bishopSights(std::vector<int>*, int, int, Color, bool threat = false);
+	void rookSights(std::vector<int>*, int, int, Color, bool threat = false);
+	void kingSights(std::vector<int>*, int, int, Color, bool threat = false);
 	void updateThreatMaps();
 };

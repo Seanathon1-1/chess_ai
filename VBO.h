@@ -2,6 +2,7 @@
 
 #include <gl/glew.h>
 
+// Wrapper class for opengl Vertex Buffer Objects
 class VBO {
 public:
 	GLuint ID;

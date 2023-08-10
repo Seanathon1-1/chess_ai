@@ -5,7 +5,7 @@
 #include <string>
 #include <cerrno>
 
-// Taken from insane coding
+// Taken from insane coding: reads in a file as a string
 std::string get_file_contents(const char* filepath) {
 	std::ifstream in(filepath, std::ios::in | std::ios::binary);
 	if (in) {
@@ -20,44 +20,54 @@ std::string get_file_contents(const char* filepath) {
 	throw errno;
 }
 
+/*-------------------------------------------------------------------------------------------------------------*\
+* Shader::Shader(const char*, const char*)
+* 
+* Parameters: vertexFilepath - Filepath to the vertex shader
+*             fragmentFilepath - FIlepath to the fragment shader
+* Description: Creates a new opengl shader program with the given vertex and fragment shaders
+\*-------------------------------------------------------------------------------------------------------------*/
 Shader::Shader(const char* vertexFilepath, const char* fragmentFilepath) {
-    // read in the shader files
+    // Read in the shader files
     std::string vertexSourceString = get_file_contents(vertexFilepath);
     std::string fragmentSourceString = get_file_contents(fragmentFilepath);
     const char* vertexSource = vertexSourceString.c_str();
     const char* fragmentSource = fragmentSourceString.c_str();
 
-    // create vertex shader
+    // Create vertex shader
 	unsigned int vertexShader;
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexSource, NULL);
 	glCompileShader(vertexShader);
 
-    // create fragment shader
+    // Create fragment shader
 	unsigned int fragmentShader;
 	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
 	glCompileShader(fragmentShader);
 
-    // link shaders together
+    // Link shaders together
 	ID = glCreateProgram();
 	glAttachShader(ID, vertexShader);
 	glAttachShader(ID, fragmentShader);
 	glLinkProgram(ID);
 
-    // cleanup
+    // Cleanup
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 }
 
+// Deletes the shader from opengl
 Shader::~Shader() {
 	glDeleteProgram(ID);
 }
 
+// Turns on this shader for use in drawing
 void Shader::activate() {
 	glUseProgram(ID);
 }
 
+// Turns off any shader currently active
 void Shader::deactivate() {
 	glUseProgram(0);
 }

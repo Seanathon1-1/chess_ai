@@ -1,6 +1,7 @@
 #pragma once
 #include "gl/glew.h"
 
+// Wrapper for opengl shaders
 class Shader {
 public:
 	GLuint ID;

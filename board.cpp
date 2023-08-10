@@ -31,11 +31,6 @@ void Square::draw(Shader* shader) {
 	};
 	unsigned int indices[] = {0, 1, 2, 1, 2, 3};
 
-	/*print_vec3(top_left_corner);
-	print_vec3(top_right_corner);
-	print_vec3(bottom_left_corner);
-	print_vec3(bottom_right_corner);*/
-
 	VAO* vertex_array = new VAO();
 	vertex_array->bind();
 	VBO* vertex_buffer = new VBO(vertices, sizeof(vertices));

@@ -2,6 +2,7 @@
 
 #include "VBO.h"
 
+// Wrapper class for opengl Vertex Array Objects
 class VAO {
 public:
 	GLuint ID;

@@ -24,8 +24,7 @@ public:
 };
 
 
-struct Board { 
-private:
+class Board { 
 	// essential data
 	Piece board[64];
 	int promoting = -1;
