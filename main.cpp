@@ -55,11 +55,6 @@ int main() {
     unsigned int frame_buffer_object;
     glGenFramebuffers(1, &frame_buffer_object);
 
-    // Create our default shader
-    const char* defaultVertexShaderSource = "../../../res/shaders/default.vert";
-    const char* defaultFragmentShaderSource = "../../../res/shaders/default.frag";
-    Shader* defaultShader = new Shader(defaultVertexShaderSource, defaultFragmentShaderSource);
-
     // Let's get this game going!
     Game game(frame_buffer_object);
     while (!glfwWindowShouldClose(window)) {
@@ -77,7 +72,7 @@ int main() {
 
         // Clear the screen and render our game
         glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
-        game.render(defaultShader);
+        game.render();
 
         // Render imgui into screen
         ImGui::Render();

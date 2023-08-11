@@ -29,19 +29,19 @@ class Board {
 	Piece board[64];
 	int promoting = -1;
  	// graphical components
-	std::vector<Square*> gSquares;
-	unsigned int gBoard;
-	unsigned int fbo;
+	unsigned int gBoard = 0;
+	unsigned int fbo = 0;
+	Shader* colorShader = nullptr;
 	Shader* pieceShader = nullptr;
 
 public:
-	Board(unsigned int); // Creates new starting board
+	Board(GLuint); // Creates new starting board
 	Board(Board*); // Copies board state
 	~Board();
 	bool makeMove(Piece, int, int);
 	void promote(PieceType);
-	void printBoard(std::string&);
-	void printBoardImage(Shader*);
+	std::string printBoardString();
+	void printBoardImage();
 	inline Piece getPiece(int s) { return board[s]; }
-	void render(Shader*);
+	void render();
 };

@@ -7,22 +7,32 @@
 
 #include <Windows.h>
 
+// Colors for the squares of the board
 #define LIGHT_SQUARE_COLOR glm::vec3(1.f)
 #define DARK_SQUARE_COLOR glm::vec3(.1f, 0.f, .2f)
-#define SQUARE_SIZE .25f
 
+// Offsets to the corners of the board squares
+#define SQUARE_SIZE .25f
 glm::vec3 square_top_right_offset = glm::vec3(SQUARE_SIZE, 0.f, 0.f);
 glm::vec3 square_bottom_left_offset = glm::vec3(0.f,  -1 * SQUARE_SIZE, 0.f);
 glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 0.f);
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
+/*-------------------------------------------------------------------------------------------------------------*\
+* Square::draw(Shader*)
+* 
+* Parameters: shader - Pointer to shader used to draw our square.
+* Description: Draws a solid colored square
+\*-------------------------------------------------------------------------------------------------------------*/
 void Square::draw(Shader* shader) {
+	// Vertex data for this square
 	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
 	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
 	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
 	glm::vec3 color = (is_dark) ? DARK_SQUARE_COLOR : LIGHT_SQUARE_COLOR;
 
+	// Vertex and index buffer data
 	float vertices[] = {
 		top_left_corner.x, top_left_corner.y, top_left_corner.z, color.x, color.y, color.z,
 		top_right_corner.x, top_right_corner.y, top_right_corner.z, color.x, color.y, color.z,
@@ -31,18 +41,22 @@ void Square::draw(Shader* shader) {
 	};
 	unsigned int indices[] = {0, 1, 2, 1, 2, 3};
 
+	// Create opengl objects
 	VAO* vertex_array = new VAO();
 	vertex_array->bind();
 	VBO* vertex_buffer = new VBO(vertices, sizeof(vertices));
 	EBO* element_buffer = new EBO(indices, sizeof(indices));
 
+	// Link the position and color attributes
 	vertex_array->linkAttribute(vertex_buffer, 0, 3, GL_FLOAT, 6 * sizeof(float), (void*)0);
 	vertex_array->linkAttribute(vertex_buffer, 1, 3, GL_FLOAT, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
+	// Draw
 	shader->activate();
 	vertex_array->bind();
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+	// Cleanup
 	shader->deactivate();
 	vertex_array->unbind();
 	vertex_buffer->unbind();
@@ -52,12 +66,19 @@ void Square::draw(Shader* shader) {
 	delete element_buffer;
 }
 
+/*-------------------------------------------------------------------------------------------------------------*\
+* Square::drawTexture(Shader*)
+* 
+* Parameters: shader - Pointer to shader used to draw the piece texture within this square
+* Description: Draws a chess piece over this square
+\*-------------------------------------------------------------------------------------------------------------*/
 void Square::drawTexture(Shader* shader) {
+	// Vertex data for this square
 	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
 	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
 	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
 
-	// buffers' data 
+	// Vertex and index buffer data 
 	GLfloat vertices[] = {
 		top_left_corner.x, top_left_corner.y, top_left_corner.z - .1f, 0.f, 1.f,
 		top_right_corner.x, top_right_corner.y, top_right_corner.z - .1f, 1.f, 1.f,
@@ -66,11 +87,13 @@ void Square::drawTexture(Shader* shader) {
 	};
 	GLuint indices[] = { 0, 1, 2, 1, 2, 3 };
 
+	// Create opengl elements
 	VAO* vertex_array = new VAO();
 	vertex_array->bind();
 	VBO* vertex_buffer = new VBO(vertices, sizeof(vertices));
 	EBO* element_buffer = new EBO(indices, sizeof(indices));
 
+	// Link position and texture coordinate attributes
 	vertex_array->linkAttribute(vertex_buffer, 0, 3, GL_FLOAT, 5 * sizeof(float), (void*)0);
 	vertex_array->linkAttribute(vertex_buffer, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
@@ -84,6 +107,7 @@ void Square::drawTexture(Shader* shader) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	// Get texture from file through stb image
 	std::string texture_path = "../../../res/textures/";
 	texture_path.append((piece.color == black) ? "black_" : "white_");
 	texture_path += piece_chars[piece.kind];
@@ -102,6 +126,7 @@ void Square::drawTexture(Shader* shader) {
 	stbi_image_free(data);
 
 
+	// Draw the piece
 	shader->activate();
 	glEnable(GL_BLEND);
 	glUniform1i(glGetUniformLocation(shader->ID, "ourTexture"), 0);
@@ -109,6 +134,7 @@ void Square::drawTexture(Shader* shader) {
 	vertex_array->bind();
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+	// Cleanup
 	shader->deactivate();
 	glDisable(GL_BLEND);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -121,14 +147,13 @@ void Square::drawTexture(Shader* shader) {
 	delete element_buffer;
 }
 
-Board::Board(unsigned int fbo) : fbo(fbo) {
-	for (int i = 0; i < 64; i++) {
-		float left = (i % 8 - 4) * .25f;
-		float right = (i % 8 - 3) * .25f;
-		float top = (i / 8 - 3) * .25f;
-		float bottom = (i / 8 - 4) * .25f;
-	}
-
+/*-------------------------------------------------------------------------------------------------------------*\
+* Board::Board(GLuint)
+* 
+* Parameters: fbo - ID of the FrameBuffer Object that the board will be drawn onto
+* Description: Creates a new Board with the classical starting position
+\*-------------------------------------------------------------------------------------------------------------*/
+Board::Board(GLuint fbo) : fbo(fbo) {
  	memset(&board, 0, sizeof(Piece) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
@@ -186,18 +211,33 @@ Board::Board(unsigned int fbo) : fbo(fbo) {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	colorShader = new Shader("../../../res/shaders/default.vert", "../../../res/shaders/default.frag");
 	pieceShader = new Shader("../../../res/shaders/piece.vert", "../../../res/shaders/piece.frag");
 }
 
+/*-------------------------------------------------------------------------------------------------------------*\
+* Board::Board(Board*)
+* 
+* Parameters: base - Pointer to the board that will be copied
+* Description: Makes a new board which is a copy of 'base'. Used to test moves
+\*-------------------------------------------------------------------------------------------------------------*/
 Board::Board(Board* base) {
 	for (int i = 0; i < 64; i++) board[i] = base->board[i];
 }
 
+// Performs cleanup before deleting the board
 Board::~Board() {
 	if (pieceShader) delete pieceShader;
-	for (auto s : gSquares) delete s;
+	if (colorShader) delete colorShader;
+	glDeleteTextures(1, &gBoard);
 }
 
+/*-------------------------------------------------------------------------------------------------------------*\
+* print_threatmap(uint64_t)
+* 
+* Parameters: map - 64 bit representation of a threatmap
+* Description: Prints out an 8x8 ASCII representation of a threatmap to the console
+\*-------------------------------------------------------------------------------------------------------------*/
 void print_threatmap(uint64_t map) {
 	std::cout << HORZ_LINE;
 	int sqr;
@@ -213,6 +253,15 @@ void print_threatmap(uint64_t map) {
 	std::cout << "\n";
 }
 
+/*-------------------------------------------------------------------------------------------------------------*\
+* Board::makeMove(Piece, int, int)
+* 
+* Parameters: p - Piece that is being moved
+*             s - Index of the source square
+*             d - Index of the destination square
+* Description: Handles moving a piece on the board and checks if we need to promote a pawn
+* Return Value: True if we need to promote a pawn, false otherwise
+\*-------------------------------------------------------------------------------------------------------------*/
 bool Board::makeMove(Piece p, int s, int d) {
 	// Make the move
 	board[d] = p;
@@ -251,6 +300,12 @@ bool Board::makeMove(Piece p, int s, int d) {
 	return 0;
 }
 
+/*-------------------------------------------------------------------------------------------------------------*\
+* Board::promote(PieceType)
+* 
+* Parameters: type - Kind of piece the pawn is promoting to
+* Description: Handles pawn promotion
+\*-------------------------------------------------------------------------------------------------------------*/
 void Board::promote(PieceType type) {
 	if (promoting == -1) {
 		std::cerr << "No piece able to promote!";
@@ -265,10 +320,16 @@ void Board::promote(PieceType type) {
 	promoting = -1;
 }
 
-void Board::printBoard(std::string& s) {
+/*-------------------------------------------------------------------------------------------------------------*\
+* Board::printBoard(std::string&)
+* 
+* Description: Outputs a string represention of the current state of the board
+* Return: String representation of the board to be printed
+\*-------------------------------------------------------------------------------------------------------------*/
+std::string Board::printBoardString() {
 	Piece p;
 	char piece_c;
-	s += HORZ_LINE;
+	std::string s = HORZ_LINE;
 	for (int rank = 7; rank >= 0; rank--) {
 		s += "| ";
 		for (int file = 0; file < 8; file++) {
@@ -280,9 +341,15 @@ void Board::printBoard(std::string& s) {
 		s += "\n";
 		s += HORZ_LINE;
 	}
+	return s;
 }
 
-void Board::printBoardImage(Shader* shader) {
+/*-------------------------------------------------------------------------------------------------------------*\
+* Board::printBoardImage(Shader*)
+* 
+* Description Prints out the graphical representation of the board.
+\*-------------------------------------------------------------------------------------------------------------*/
+void Board::printBoardImage() {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
@@ -296,7 +363,7 @@ void Board::printBoardImage(Shader* shader) {
 			bool isBlack = (i % 2) ^ (i / 8 % 2);
 			Piece p = board[i];
 			Square* s = new Square(top_left, isBlack, p);
-			s->draw(shader);
+			s->draw(colorShader);
 
 			if (p.kind != open) {
 				s->drawTexture(pieceShader);
@@ -313,14 +380,17 @@ void Board::printBoardImage(Shader* shader) {
 	}
 }
 
-void Board::render(Shader* shader) {
-	std::string board_string;
-	printBoard(board_string);
+/*-------------------------------------------------------------------------------------------------------------*\
+* Board::render()
+* 
+* Description: Handles how the board will be rendered. Calls for both the graphical and text based renderings.
+\*-------------------------------------------------------------------------------------------------------------*/
+void Board::render() {
+	std::string board_string = printBoardString();
 	ImGui::Begin("Play window");
 	ImGui::Text(board_string.c_str());
 	ImGui::End();
-
 	
-	printBoardImage(shader); 
+	printBoardImage(); 
 	ImGui::End(); 
 }

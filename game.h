@@ -33,7 +33,7 @@ public:
 	Game(unsigned int);
 	Game(Game*);
 	~Game();
-	void render(Shader*);
+	void render();
 
 private:
 	void makeUserMove(std::string);

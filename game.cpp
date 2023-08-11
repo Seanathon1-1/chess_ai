@@ -500,10 +500,10 @@ void Game::updateThreatMaps() {
 * Parameters: shader - Pointer to the shader object we will be using to render the board
 * Description: Sets up the ImGUI context of our game, handles user entered moves, and handles pawn promotion
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::render(Shader* shader) {
+void Game::render() {
 	ImGui::SetNextWindowPos(ImVec2(0, 0)); 
 	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
-	board->render(shader);
+	board->render();
 
 	// Handle user entered moves
 	char move[16] = "";
