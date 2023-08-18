@@ -39,7 +39,7 @@ Game::Game(Game* base) {
 
 // I don't think I need a big comment for this destructor.
 Game::~Game() {
-	delete board;
+	if (board) delete board;
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -192,6 +192,7 @@ void Game::allLegalMoves(std::vector<int>* moves, Color c) {
 		if (board->getPiece(i).color == c) {
 			legalPieceMoves(moves, board->getPiece(i), i % 8, i / 8);
 		}
+		if (moves->size() > 0) return;
 	}
 }
 

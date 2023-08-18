@@ -56,7 +56,7 @@ int main() {
     glGenFramebuffers(1, &frame_buffer_object);
 
     // Let's get this game going!
-    Game game((unsigned int)0);
+    Game game(frame_buffer_object);
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 

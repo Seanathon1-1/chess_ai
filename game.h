@@ -6,7 +6,7 @@
 
 class Game {
 private: 
-	Board* board = new Board(1);
+	Board* board = nullptr;
 	// Who's in check
 	bool white_check = 0;
 	bool black_check = 0;
