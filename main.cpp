@@ -56,7 +56,7 @@ int main() {
     glGenFramebuffers(1, &frame_buffer_object);
 
     // Let's get this game going!
-    Game game(frame_buffer_object);
+    Game game((unsigned int)0);
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -86,7 +86,6 @@ int main() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
-    delete defaultShader;
     glfwTerminate();
     
     return 0;
