@@ -13,6 +13,10 @@
 
 using namespace std;
 
+void handleMouseButtonEvent(GLFWwindow* window, int button, int action, int mods) {
+    
+}
+
 int main() {
     // Initialize GLFW.
     if (!glfwInit())
@@ -33,6 +37,9 @@ int main() {
     // Make the context of the window.
     glfwMakeContextCurrent(window);
 
+    // Callbacks
+    glfwSetMouseButtonCallback(window, handleMouseButtonEvent);
+    
     // Initialize GLEW.
     if (glewInit())
     {

@@ -26,8 +26,8 @@ private:
 	bool black_long_castle = 1;
 	// Are we waiting for the player to decide how to promote their pawn
 	bool wait_for_promote = 0;
-	// Framebuffer we draw our board on
-	unsigned int fbo;
+
+	Piece selected = empty_sqr;
 
 public:
 	Game(unsigned int);

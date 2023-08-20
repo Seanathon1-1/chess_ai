@@ -7,6 +7,8 @@
 
 #include <Windows.h>
 
+#define BOARD_SIZE 400
+
 // Colors for the squares of the board
 #define LIGHT_SQUARE_COLOR glm::vec3(1.f)
 #define DARK_SQUARE_COLOR glm::vec3(.1f, 0.f, .2f)
@@ -354,7 +356,10 @@ void Board::printBoardImage() {
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	 
+	
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
+	ImGui::SetNextWindowPos(ImVec2(WIN_WIDTH - BOARD_SIZE, 0));
+	ImGui::SetNextWindowSize(ImVec2(BOARD_SIZE, BOARD_SIZE));
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
 		for (int i = 0; i < 64 ; i++) {
 			float left = (i % 8 - 4) * .25f;
@@ -365,19 +370,28 @@ void Board::printBoardImage() {
 			Square* s = new Square(top_left, isBlack, p);
 			s->draw(colorShader);
 
+			if (p.selected) {
+				delete s;
+				ImVec2 mPos = ImGui::GetMousePos();
+				ImVec2 wSize = ImGui::GetWindowSize();
+				top_left.x = mPos.x / wSize.x * 2 - SQUARE_SIZE / 2;
+				top_left.y = mPos.y / wSize.y * 2 - SQUARE_SIZE / 2;
+				s = new Square(top_left, isBlack, p);
+			}
 			if (p.kind != open) {
 				s->drawTexture(pieceShader);
 			}
 			delete s;
 		}
-	
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
-		glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+		glClearColor(0.3f, 0.1f, 0.3f, 0.1f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
 	}
+	ImGui::PopStyleVar();
+	ImGui::End(); 
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -392,5 +406,4 @@ void Board::render() {
 	ImGui::End();
 	
 	printBoardImage(); 
-	ImGui::End(); 
 }

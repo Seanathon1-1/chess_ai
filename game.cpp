@@ -496,15 +496,30 @@ void Game::updateThreatMaps() {
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
-* Game::render(Shader*)
+* Game::render()
 * 
-* Parameters: shader - Pointer to the shader object we will be using to render the board
 * Description: Sets up the ImGUI context of our game, handles user entered moves, and handles pawn promotion
 \*-------------------------------------------------------------------------------------------------------------*/
 void Game::render() {
 	ImGui::SetNextWindowPos(ImVec2(0, 0)); 
 	ImGui::Begin("Play window", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
 	board->render();
+
+	ImGui::Begin("Gameview");
+	ImGuiIO& io = ImGui::GetIO();
+	if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
+		ImVec2 wPos = ImGui::GetWindowPos();
+		ImVec2 wSize = ImGui::GetWindowSize();
+		ImVec2 mPos = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
+		char file = mPos.x / (wSize.x / 8);
+		char rank = 8 - mPos.y / (wSize.y / 8);
+		Piece p = board->getPiece(BIDX(file, rank));
+		if (p.kind != open) {
+			selected = p;
+			p.selected = true;
+		}
+	}
+	ImGui::End();
 
 	// Handle user entered moves
 	char move[16] = "";

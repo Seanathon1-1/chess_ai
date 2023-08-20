@@ -8,6 +8,7 @@
 struct Piece {
 	PieceType kind;
 	Color color;
+	bool selected = false;
 };
 
 #define empty_sqr Piece(open, none);
@@ -19,6 +20,7 @@ struct Square {
 	Piece piece;
 
 public:
+	Square(glm::vec3 tlc, bool dark, Piece p) : top_left_corner(tlc), is_dark(dark), piece(p) {}
 	void draw(Shader*);
 	void drawTexture(Shader*);
 };
