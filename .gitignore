@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 # Claudiaide config files
 .claudiaideconfig
+
+chess_project_notes/
