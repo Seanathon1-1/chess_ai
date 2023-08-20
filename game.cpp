@@ -75,23 +75,22 @@ void Game::makeUserMove(std::string move) {
 
 	// Check that there is a piece on the initial square
 	int select_idx = BIDX(sf, sr);
-	Piece selected = board->getPiece(select_idx);
-	if (selected.kind == open) {
+	Piece* selected = board->getPiece(select_idx);
+	if (selected->kind == open) {
 		std::cout << "No piece selected to move.\n";
 		return;
 	} 
 
 	// Check that it is the correct player's turn
-	if (selected.color != whose_turn) {
+	if (selected->color != whose_turn) {
 		std::cout << "Can't move other player's piece.\n";
 		return;
 	}
 
 	// Check if the destination is a legal move
 	int dest_idx = BIDX(df, dr);
-	Piece destination = board->getPiece(dest_idx);
 	std::vector<int> moves_possible;
-	legalPieceMoves(&moves_possible, selected, sf, sr);
+	legalPieceMoves(&moves_possible, *selected, sf, sr);
 	bool move_exists = 0;
 	for (int move : moves_possible) if (move == dest_idx) { move_exists = 1; break; }
 	if (!move_exists) {
@@ -100,7 +99,7 @@ void Game::makeUserMove(std::string move) {
 	}
 
 	// Makes the move and changes whose turn it is
-	makeLegalMove(selected, select_idx, dest_idx);
+	makeLegalMove(*selected, select_idx, dest_idx);
 
 	// Look for checkmate/stalemate
 	std::vector<int> nextPlayerMoves;
@@ -189,8 +188,8 @@ void Game::makeLegalMove(Piece p, int src, int dest) {
 \*-------------------------------------------------------------------------------------------------------------*/
 void Game::allLegalMoves(std::vector<int>* moves, Color c) {
 	for (int i = 0; i < 64; i++) {
-		if (board->getPiece(i).color == c) {
-			legalPieceMoves(moves, board->getPiece(i), i % 8, i / 8);
+		if (board->getPiece(i)->color == c) {
+			legalPieceMoves(moves, *board->getPiece(i), i % 8, i / 8);
 		}
 		if (moves->size() > 0) return;
 	}
@@ -216,12 +215,12 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 
 		// Normal move
 		square = BIDX(file, rank + (1 * p.color));
-		if (board->getPiece(square).kind == open) {
+		if (board->getPiece(square)->kind == open) {
 			possible_moves.push_back(square);
 		}
 		// Pawn power
 		square = BIDX(file, rank + (2 * p.color));
-		if (rank == home_rank && board->getPiece(square).kind == open) {
+		if (rank == home_rank && board->getPiece(square)->kind == open) {
 			possible_moves.push_back(square);
 		}
 
@@ -298,9 +297,9 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 void Game::pawnSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
 	int square;
 	square = BIDX(file - 1, rank + (1 * c));
-	if (file != 0 && (board->getPiece(square).color == (c * -1) || threat)) moves->push_back(square);
+	if (file != 0 && (board->getPiece(square)->color == (c * -1) || threat)) moves->push_back(square);
 	square = BIDX(file + 1, rank + (1 * c));
-	if (file != 7 && (board->getPiece(square).color == (c * -1) || threat)) moves->push_back(square);
+	if (file != 7 && (board->getPiece(square)->color == (c * -1) || threat)) moves->push_back(square);
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -323,7 +322,7 @@ void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bo
 		r = rank + rank_moves[i];
 		if (ON_BOARD(f) && ON_BOARD(r)) {
 			square = BIDX(f, r);
-			if (board->getPiece(square).color != c || threat) moves->push_back(square);
+			if (board->getPiece(square)->color != c || threat) moves->push_back(square);
 		}
 	}
 }
@@ -346,8 +345,8 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 	f = file - 1; r = rank + 1;
 	while (f >= 0 && r < 8) {
 		square = BIDX(f, r);
-		if (board->getPiece(square).kind == open) moves->push_back(square);
-		else if (board->getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square)->kind == open) moves->push_back(square);
+		else if (board->getPiece(square)->color == c && !threat) break;
 		else { moves->push_back(square); break; }
 		f--; r++;
 	}
@@ -356,8 +355,8 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 	f = file + 1; r = rank + 1;
 	while (f < 8 && r < 8) {
 		square = BIDX(f, r);
-		if (board->getPiece(square).kind == open) moves->push_back(square);
-		else if (board->getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square)->kind == open) moves->push_back(square);
+		else if (board->getPiece(square)->color == c && !threat) break;
 		else { moves->push_back(square); break; }
 		f++; r++;
 	}
@@ -366,8 +365,8 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 	f = file - 1; r = rank - 1;
 	while (f >= 0 && r >= 0) {
 		square = BIDX(f, r);
-		if (board->getPiece(square).kind == open) moves->push_back(square);
-		else if (board->getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square)->kind == open) moves->push_back(square);
+		else if (board->getPiece(square)->color == c && !threat) break;
 		else { moves->push_back(square); break; }
 		f--; r--;
 	}
@@ -376,8 +375,8 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 	f = file + 1; r = rank - 1;
 	while (f < 8 && r >= 0) {
 		square = BIDX(f, r);
-		if (board->getPiece(square).kind == open) moves->push_back(square);
-		else if (board->getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square)->kind == open) moves->push_back(square);
+		else if (board->getPiece(square)->color == c && !threat) break;
 		else { moves->push_back(square); break; }
 		f++; r--;
 	}
@@ -398,32 +397,32 @@ void Game::rookSights(std::vector<int>* moves, int file, int rank, Color c, bool
 	// Left
 	for (f = file - 1; f >= 0; f--) {
 		square = BIDX(f, rank);
-		if (board->getPiece(square).kind == open) moves->push_back(square);
-		else if (board->getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square)->kind == open) moves->push_back(square);
+		else if (board->getPiece(square)->color == c && !threat) break;
 		else { moves->push_back(square); break; }
 	}
 
 	// Right
 	for (f = file + 1; f < 8; f++) {
 		square = BIDX(f, rank);
-		if (board->getPiece(square).kind == open) moves->push_back(square);
-		else if (board->getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square)->kind == open) moves->push_back(square);
+		else if (board->getPiece(square)->color == c && !threat) break;
 		else { moves->push_back(square); break; }
 	}
 
 	// Up
 	for (r = rank + 1; r < 8; r++) {
 		square = BIDX(file, r);
-		if (board->getPiece(square).kind == open) moves->push_back(square);
-		else if (board->getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square)->kind == open) moves->push_back(square);
+		else if (board->getPiece(square)->color == c && !threat) break;
 		else { moves->push_back(square); break; }
 	}
 
 	// Down
 	for (r = rank - 1; r >= 0; r--) {
 		square = BIDX(file, r);
-		if (board->getPiece(square).kind == open) moves->push_back(square);
-		else if (board->getPiece(square).color == c && !threat) break;
+		if (board->getPiece(square)->kind == open) moves->push_back(square);
+		else if (board->getPiece(square)->color == c && !threat) break;
 		else { moves->push_back(square); break; }
 	}
 }
@@ -448,7 +447,7 @@ void Game::kingSights(std::vector<int>* moves, int file, int rank, Color c, bool
 		r = rank + rank_moves[i];
 		if (ON_BOARD(f) && ON_BOARD(r)) {
 			square = BIDX(f, r);
-			if (board->getPiece(square).color != c || threat) moves->push_back(square);
+			if (board->getPiece(square)->color != c || threat) moves->push_back(square);
 		}
 	}
 }
@@ -471,23 +470,23 @@ void Game::updateThreatMaps() {
 	white_threat_map = 0ULL;
 	black_threat_map = 0ULL;
 
-	Piece piece;
+	Piece* piece;
 	std::vector<int> squares;
 	uint64_t* threat_map;
 	int f; int r;
 	for (int i = 0; i < 64; i++) {
 		squares.clear();
 		piece = board->getPiece(i);
-		if (piece.kind == open) continue;
-		threat_map = (piece.color == white) ? &white_threat_map : &black_threat_map;
+		if (piece->kind == open) continue;
+		threat_map = (piece->color == white) ? &white_threat_map : &black_threat_map;
 
 		// Find squares covered by this piece
 		f = i % 8; r = i / 8;
-		if (piece.kind == pawn) pawnSights(&squares, f, r, piece.color, true);
-		if (piece.kind == knight) knightSights(&squares, f, r, piece.color, true);
-		if (piece.kind == bishop || piece.kind == queen) bishopSights(&squares, f, r, piece.color, true);
-		if (piece.kind == rook || piece.kind == queen) rookSights(&squares, f, r, piece.color, true);
-		if (piece.kind == king) kingSights(&squares, f, r, piece.color, true);
+		if (piece->kind == pawn) pawnSights(&squares, f, r, piece->color, true);
+		if (piece->kind == knight) knightSights(&squares, f, r, piece->color, true);
+		if (piece->kind == bishop || piece->kind == queen) bishopSights(&squares, f, r, piece->color, true);
+		if (piece->kind == rook || piece->kind == queen) rookSights(&squares, f, r, piece->color, true);
+		if (piece->kind == king) kingSights(&squares, f, r, piece->color, true);
 
 		for (int sqr : squares) {
 			set_bit(threat_map, sqr);
@@ -513,11 +512,15 @@ void Game::render() {
 		ImVec2 mPos = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
 		char file = mPos.x / (wSize.x / 8);
 		char rank = 8 - mPos.y / (wSize.y / 8);
-		Piece p = board->getPiece(BIDX(file, rank));
-		if (p.kind != open) {
+		Piece* p = board->getPiece(BIDX(file, rank));
+		if (p->kind != open) {
 			selected = p;
-			p.selected = true;
+			p->selected = true;
 		}
+	}
+	else if (ImGui::IsMouseReleased(0) && selected) {
+		selected->selected = false;
+		selected = nullptr;
 	}
 	ImGui::End();
 

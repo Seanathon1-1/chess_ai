@@ -5,8 +5,9 @@
 
 
 class Game {
-private: 
+private:
 	Board* board = nullptr;
+	Piece* selected = nullptr;
 	// Who's in check
 	bool white_check = 0;
 	bool black_check = 0;
@@ -27,7 +28,6 @@ private:
 	// Are we waiting for the player to decide how to promote their pawn
 	bool wait_for_promote = 0;
 
-	Piece selected = empty_sqr;
 
 public:
 	Game(unsigned int);

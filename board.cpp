@@ -373,9 +373,8 @@ void Board::printBoardImage() {
 			if (p.selected) {
 				delete s;
 				ImVec2 mPos = ImGui::GetMousePos();
-				ImVec2 wSize = ImGui::GetWindowSize();
-				top_left.x = mPos.x / wSize.x * 2 - SQUARE_SIZE / 2;
-				top_left.y = mPos.y / wSize.y * 2 - SQUARE_SIZE / 2;
+				top_left.x = mPos.x / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 3;
+				top_left.y = mPos.y / BOARD_SIZE * 2 + SQUARE_SIZE / 2 - 1;
 				s = new Square(top_left, isBlack, p);
 			}
 			if (p.kind != open) {

@@ -44,6 +44,6 @@ public:
 	void promote(PieceType);
 	std::string printBoardString();
 	void printBoardImage();
-	inline Piece getPiece(int s) { return board[s]; }
+	inline Piece* getPiece(int s) { return &board[s]; }
 	void render();
 };
