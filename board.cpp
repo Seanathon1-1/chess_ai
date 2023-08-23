@@ -159,7 +159,7 @@ Board::Board(GLuint fbo) : fbo(fbo) {
  	memset(&board, 0, sizeof(Piece) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
-		board[8 + file] = Piece(pawn, white);
+		board[8 + file] = new Pawn(white, { file,1 }, this);
 		board[48 + file] = Piece(pawn, black);
 	}
 
@@ -264,7 +264,7 @@ void print_threatmap(uint64_t map) {
 * Description: Handles moving a piece on the board and checks if we need to promote a pawn
 * Return Value: True if we need to promote a pawn, false otherwise
 \*-------------------------------------------------------------------------------------------------------------*/
-bool Board::makeMove(Piece p, int s, int d) {
+bool Board::makeMove(Piece* p, int s, int d) {
 	// Make the move
 	board[d] = p;
 	board[s] = empty_sqr;
@@ -329,14 +329,14 @@ void Board::promote(PieceType type) {
 * Return: String representation of the board to be printed
 \*-------------------------------------------------------------------------------------------------------------*/
 std::string Board::printBoardString() {
-	Piece p;
+	Piece* p;
 	char piece_c;
 	std::string s = HORZ_LINE;
 	for (int rank = 7; rank >= 0; rank--) {
 		s += "| ";
 		for (int file = 0; file < 8; file++) {
 			p = board[BIDX(file, rank)];
-			piece_c = (p.color == white) ? tolower(piece_chars[p.kind]) : piece_chars[p.kind];
+			piece_c = (p->getColor() == white) ? tolower(p->textboardSymbol()) : p->textboardSymbol();
 			s += piece_c;
 			s += " | ";
 		}
@@ -366,18 +366,18 @@ void Board::printBoardImage() {
 			float top = (i / -8 + 4) * .25f;
 			glm::vec3 top_left = glm::vec3(left, top, 0.f);
 			bool isBlack = (i % 2) ^ (i / 8 % 2);
-			Piece p = board[i];
+			Piece* p = board[i];
 			Square* s = new Square(top_left, isBlack, p);
 			s->draw(colorShader);
 
-			if (p.selected) {
+			if (p->isSelected()) {
 				delete s;
 				ImVec2 mPos = ImGui::GetMousePos();
 				top_left.x = mPos.x / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 3;
 				top_left.y = mPos.y / BOARD_SIZE * 2 + SQUARE_SIZE / 2 - 1;
 				s = new Square(top_left, isBlack, p);
 			}
-			if (p.kind != open) {
+			if (p) {
 				s->drawTexture(pieceShader);
 			}
 			delete s;

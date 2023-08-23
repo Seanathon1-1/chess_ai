@@ -2,25 +2,18 @@
 
 #include "util.h"
 #include "shader.h"
+#include "piece.h"
 #include <string>
 #include <iostream>
-
-struct Piece {
-	PieceType kind;
-	Color color;
-	bool selected = false;
-};
-
-#define empty_sqr Piece(open, none);
 
 
 struct Square {
 	glm::vec3 top_left_corner;
 	bool is_dark;
-	Piece piece;
+	Piece* piece;
 
 public:
-	Square(glm::vec3 tlc, bool dark, Piece p) : top_left_corner(tlc), is_dark(dark), piece(p) {}
+	Square(glm::vec3 tlc, bool dark, Piece* p) : top_left_corner(tlc), is_dark(dark), piece(p) {}
 	void draw(Shader*);
 	void drawTexture(Shader*);
 };
@@ -28,7 +21,7 @@ public:
 
 class Board { 
 	// essential data
-	Piece board[64];
+	Piece* board[64];
 	int promoting = -1;
  	// graphical components
 	unsigned int gBoard = 0;
@@ -40,7 +33,7 @@ public:
 	Board(GLuint); // Creates new starting board
 	Board(Board*); // Copies board state
 	~Board();
-	bool makeMove(Piece, int, int);
+	bool makeMove(Piece*, int, int);
 	void promote(PieceType);
 	std::string printBoardString();
 	void printBoardImage();

@@ -507,12 +507,12 @@ void Game::render() {
 	ImGui::Begin("Gameview");
 	ImGuiIO& io = ImGui::GetIO();
 	if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !selected) {
-		ImVec2 wPos = ImGui::GetWindowPos();
+		ImVec2 wPos  = ImGui::GetWindowPos();
 		ImVec2 wSize = ImGui::GetWindowSize();
-		ImVec2 mPos = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
-		char file = mPos.x / (wSize.x / 8);
-		char rank = 8 - mPos.y / (wSize.y / 8);
-		Piece* p = board->getPiece(BIDX(file, rank));
+		ImVec2 mPos  = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
+		char file    = mPos.x / (wSize.x / 8);
+		char rank    = 8 - mPos.y / (wSize.y / 8);
+		Piece* p     = board->getPiece(BIDX(file, rank));
 		if (p->kind != open && p->color == whose_turn) {
 			selected = p;
 			p->selected = true;
