@@ -8,10 +8,7 @@
 * Description: Creates a new game in the starting poistion and creates a Board object for it's representation
 \*-------------------------------------------------------------------------------------------------------------*/
 Game::Game(unsigned int fbo = 0) {
-	board = new Board(fbo);
-	whose_turn = white;
-	white_king = 4;
-	black_king = 60;
+
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -22,19 +19,6 @@ Game::Game(unsigned int fbo = 0) {
 \*-------------------------------------------------------------------------------------------------------------*/
 Game::Game(Game* base) {
 	board = new Board(base->board);
-	white_check = base->white_check;
-	black_check = base->black_check;
-	white_king = base->white_king;
-	black_king = base->black_king;
-	whose_turn = base->whose_turn;
-	white_threat_map = base->white_threat_map;
-	black_threat_map = base->black_threat_map;
-	white_en_passant = base->white_en_passant;
-	black_en_passant = base->black_en_passant;
-	white_short_castle = base->white_short_castle;
-	black_short_castle = base->black_short_castle;
-	white_long_castle = base->white_long_castle;
-	black_long_castle = base->black_long_castle;
 }
 
 // I don't think I need a big comment for this destructor.
@@ -76,13 +60,13 @@ void Game::makeUserMove(std::string move) {
 	// Check that there is a piece on the initial square
 	int select_idx = BIDX(sf, sr);
 	Piece* selected = board->getPiece(select_idx);
-	if (selected->kind == open) {
+	if (!selected) {
 		std::cout << "No piece selected to move.\n";
 		return;
 	} 
 
 	// Check that it is the correct player's turn
-	if (selected->color != whose_turn) {
+	if (selected->getColor()!= board->whoseTurn()) {
 		std::cout << "Can't move other player's piece.\n";
 		return;
 	}
@@ -90,7 +74,7 @@ void Game::makeUserMove(std::string move) {
 	// Check if the destination is a legal move
 	int dest_idx = BIDX(df, dr);
 	std::vector<int> moves_possible;
-	legalPieceMoves(&moves_possible, *selected, sf, sr);
+	legalPieceMoves(&moves_possible, selected, sf, sr);
 	bool move_exists = 0;
 	for (int move : moves_possible) if (move == dest_idx) { move_exists = 1; break; }
 	if (!move_exists) {
@@ -132,7 +116,7 @@ void Game::makeUserMove(std::string move) {
 * Description: Makes the move on the board and accordingly updates the game state, such as castling availablity,
 *              en passant opportunities, whose turn, etc.
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::makeLegalMove(Piece p, int src, int dest) {
+void Game::makeLegalMove(Piece* p, int src, int dest) {
 	wait_for_promote |= board->makeMove(p, src, dest);
 
 	// Look for check
@@ -249,26 +233,7 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 
 	if (p.kind == king) {
 		kingSights(&possible_moves, file, rank, p.color);
-		if (p.color == white) {
-			if (white_short_castle) {
-				bool transit_check = XTRC_BIT(black_threat_map, white_king + 1);
-				if (!white_check && !transit_check) possible_moves.push_back(BIDX(6, 0));
-			}
-			if (white_long_castle) {
-				bool transit_check = XTRC_BIT(black_threat_map, white_king - 1);
-				if (!white_check && !transit_check) possible_moves.push_back(BIDX(2, 0));
-			}
-		}
-		if (p.color == black) {
-			if (black_short_castle) {
-				bool transit_check = XTRC_BIT(white_threat_map, black_king + 1);
-				if (!black_check && !transit_check) possible_moves.push_back(BIDX(6, 7));
-			}
-			if (black_long_castle) {
-				bool transit_check = XTRC_BIT(white_threat_map, black_king - 1);
-				if (!black_check && !transit_check) possible_moves.push_back(BIDX(2, 7));
-			}
-		}
+		
 	}
 
 	// Look to see if move leaves player's king in check
@@ -313,18 +278,7 @@ void Game::pawnSights(std::vector<int>* moves, int file, int rank, Color c, bool
 * Description: Looks at the possible moves for a knight and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
 void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
-	int file_moves[8] = { -2, -2, -1, -1, 1, 1, 2, 2 };
-	int rank_moves[8] = { -1, 1, -2, 2, -2, 2, -1, 1 };
-
-	int f; int r; int square;
-	for (int i = 0; i < 8; i++) {
-		f = file + file_moves[i];
-		r = rank + rank_moves[i];
-		if (ON_BOARD(f) && ON_BOARD(r)) {
-			square = BIDX(f, r);
-			if (board->getPiece(square)->color != c || threat) moves->push_back(square);
-		}
-	}
+	
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -338,48 +292,7 @@ void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bo
 * Description: Looks at the possible moves for a bishop and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
 void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
-	int f; int r; int square;
-
-	// We assume north to be in the positive rank direction (ie towards rank 8)
-	// NW
-	f = file - 1; r = rank + 1;
-	while (f >= 0 && r < 8) {
-		square = BIDX(f, r);
-		if (board->getPiece(square)->kind == open) moves->push_back(square);
-		else if (board->getPiece(square)->color == c && !threat) break;
-		else { moves->push_back(square); break; }
-		f--; r++;
-	}
-
-	// NE
-	f = file + 1; r = rank + 1;
-	while (f < 8 && r < 8) {
-		square = BIDX(f, r);
-		if (board->getPiece(square)->kind == open) moves->push_back(square);
-		else if (board->getPiece(square)->color == c && !threat) break;
-		else { moves->push_back(square); break; }
-		f++; r++;
-	}
-
-	// SW
-	f = file - 1; r = rank - 1;
-	while (f >= 0 && r >= 0) {
-		square = BIDX(f, r);
-		if (board->getPiece(square)->kind == open) moves->push_back(square);
-		else if (board->getPiece(square)->color == c && !threat) break;
-		else { moves->push_back(square); break; }
-		f--; r--;
-	}
-
-	// SE
-	f = file + 1; r = rank - 1;
-	while (f < 8 && r >= 0) {
-		square = BIDX(f, r);
-		if (board->getPiece(square)->kind == open) moves->push_back(square);
-		else if (board->getPiece(square)->color == c && !threat) break;
-		else { moves->push_back(square); break; }
-		f++; r--;
-	}
+	
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -393,38 +306,7 @@ void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bo
 * Description: Looks at the possible moves for a rook and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
 void Game::rookSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
-	int f; int r; int square;
-	// Left
-	for (f = file - 1; f >= 0; f--) {
-		square = BIDX(f, rank);
-		if (board->getPiece(square)->kind == open) moves->push_back(square);
-		else if (board->getPiece(square)->color == c && !threat) break;
-		else { moves->push_back(square); break; }
-	}
-
-	// Right
-	for (f = file + 1; f < 8; f++) {
-		square = BIDX(f, rank);
-		if (board->getPiece(square)->kind == open) moves->push_back(square);
-		else if (board->getPiece(square)->color == c && !threat) break;
-		else { moves->push_back(square); break; }
-	}
-
-	// Up
-	for (r = rank + 1; r < 8; r++) {
-		square = BIDX(file, r);
-		if (board->getPiece(square)->kind == open) moves->push_back(square);
-		else if (board->getPiece(square)->color == c && !threat) break;
-		else { moves->push_back(square); break; }
-	}
-
-	// Down
-	for (r = rank - 1; r >= 0; r--) {
-		square = BIDX(file, r);
-		if (board->getPiece(square)->kind == open) moves->push_back(square);
-		else if (board->getPiece(square)->color == c && !threat) break;
-		else { moves->push_back(square); break; }
-	}
+	
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -438,18 +320,7 @@ void Game::rookSights(std::vector<int>* moves, int file, int rank, Color c, bool
 * Description: Looks at the possible moves for a king and appends them to 'moves'
 \*-------------------------------------------------------------------------------------------------------------*/
 void Game::kingSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
-	int file_moves[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
-	int rank_moves[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
-
-	int f; int r; int square;
-	for (int i = 0; i < 8; i++) {
-		f = file + file_moves[i];
-		r = rank + rank_moves[i];
-		if (ON_BOARD(f) && ON_BOARD(r)) {
-			square = BIDX(f, r);
-			if (board->getPiece(square)->color != c || threat) moves->push_back(square);
-		}
-	}
+	
 }
 
 // Sets a single bit in a 64-bit map to 1
@@ -513,9 +384,9 @@ void Game::render() {
 		char file    = mPos.x / (wSize.x / 8);
 		char rank    = 8 - mPos.y / (wSize.y / 8);
 		Piece* p     = board->getPiece(BIDX(file, rank));
-		if (p->kind != open && p->color == whose_turn) {
+		if (p && p->getColor() == board->whoseTurn()) {
 			selected = p;
-			p->selected = true;
+			p->select();
 		}
 	}
 	else if (ImGui::IsMouseReleased(0) && selected) {
@@ -539,14 +410,25 @@ void Game::render() {
 	if (move_entered && !wait_for_promote) makeUserMove(move);
 	if (wait_for_promote) {
 		PieceType promote_to = open;
-		if (ImGui::Button("Queen"))  promote_to = queen;  ImGui::SameLine();
-		if (ImGui::Button("Knight")) promote_to = knight; ImGui::SameLine();
-		if (ImGui::Button("Rook"))   promote_to = rook;   ImGui::SameLine();
-		if (ImGui::Button("Bishop")) promote_to = bishop; ImGui::SameLine();
-
-		if (promote_to != open) {
-			board->promote(promote_to);
+		if (ImGui::Button("Queen")) {
+			board->promote<Queen>();
 			wait_for_promote = 0;
+			ImGui::SameLine();
+		}
+		if (ImGui::Button("Knight")) {
+			board->promote<Queen>();
+			wait_for_promote = 0;
+			ImGui::SameLine();
+		}
+		if (ImGui::Button("Rook")) {
+			board->promote<Queen>();
+			wait_for_promote = 0;
+			ImGui::SameLine();
+		}
+		if (ImGui::Button("Bishop")) {
+			board->promote<Queen>();
+			wait_for_promote = 0;
+			ImGui::SameLine();
 		}
 	}
 	ImGui::End();

@@ -12,38 +12,52 @@ protected:
 public:
 	Piece(Color, glm::vec2, Board*);
 	Color getColor() { return m_color; }
+	void select() { m_selected = true; }
+	void deselect() { m_selected = false; }
 	bool isSelected() { return m_selected; }
 	
-	virtual std::vector<glm::vec2>& legalMoves() = 0;
+	virtual std::vector<glm::vec2>& legalMoves(bool) = 0;
 	virtual char textboardSymbol() = 0;
 };
 
-class Knight : private Piece {
-	std::vector<glm::vec2>& legalMoves() override;
+class Knight : public Piece {
+public:
+	using Piece::Piece;
+	std::vector<glm::vec2>& legalMoves(bool) override;
 	char textboardSymbol() override { return 'N'; }
 };
 
-class Bishop : Piece {
-	std::vector<glm::vec2>& legalMoves() override;
+class Bishop : public Piece {
+public:
+	using Piece::Piece;
+	std::vector<glm::vec2>& legalMoves(bool) override;
 	char textboardSymbol() override { return 'B'; }
 };
 
-class Rook : Piece {
-	std::vector<glm::vec2>& legalMoves() override;
+class Rook : public Piece {
+public:
+	using Piece::Piece;
+	std::vector<glm::vec2>& legalMoves(bool) override;
 	char textboardSymbol() override { return 'R'; }
 };
 
-class Queen : Piece {
-	std::vector<glm::vec2>& legalMoves() override;
+class Queen : public Piece {
+public:
+	using Piece::Piece;
+	std::vector<glm::vec2>& legalMoves(bool) override;
 	char textboardSymbol() override { return 'Q'; }
 };
 
-class King : Piece {
-	std::vector<glm::vec2>& legalMoves() override;
+class King : public Piece {
+public:
+	using Piece::Piece;
+	std::vector<glm::vec2>& legalMoves(bool) override;
 	char textboardSymbol() override { return 'K'; }
 };
 
-class Pawn : Piece {
-	std::vector<glm::vec2>& legalMoves() override;
+class Pawn : public Piece {
+public:
+	using Piece::Piece;
+	std::vector<glm::vec2>& legalMoves(bool) override;
 	char textboardSymbol() override { return 'P'; }
 };

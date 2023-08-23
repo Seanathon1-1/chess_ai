@@ -111,8 +111,8 @@ void Square::drawTexture(Shader* shader) {
 
 	// Get texture from file through stb image
 	std::string texture_path = "../../../res/textures/";
-	texture_path.append((piece.color == black) ? "black_" : "white_");
-	texture_path += piece_chars[piece.kind];
+	texture_path.append((piece->getColor() == black) ? "black_" : "white_");
+	texture_path += piece->textboardSymbol();
 	texture_path.append(".png");
 	unsigned char* data = stbi_load(texture_path.c_str(), &width, &height, &nChannels, 0);
 	if (data) {
@@ -159,35 +159,35 @@ Board::Board(GLuint fbo) : fbo(fbo) {
  	memset(&board, 0, sizeof(Piece) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
-		board[8 + file] = new Pawn(white, { file,1 }, this);
-		board[48 + file] = Piece(pawn, black);
+		board[8 + file]  = new Pawn(white, { file, 1 }, this);
+		board[48 + file] = new Pawn(black, { file, 6 }, this);
 	}
 
 	// Rooks
-	board[0] = Piece(rook, white);
-	board[7] = Piece(rook, white);
-	board[56] = Piece(rook, black);
-	board[63] = Piece(rook, black);
+	board[ 0] = new Rook(white, { 0,0 }, this);
+	board[ 7] = new Rook(white, { 7,0 }, this);
+	board[56] = new Rook(black, { 0,7 }, this);
+	board[63] = new Rook(black, { 7,7 }, this);
 
 	// Knights
-	board[1] = Piece(knight, white);
-	board[6] = Piece(knight, white);
-	board[57] = Piece(knight, black);
-	board[62] = Piece(knight, black);
+	board[ 1] = new Knight(white, { 1,0 }, this);
+	board[ 6] = new Knight(white, { 6,0 }, this);
+	board[57] = new Knight(black, { 1,7 }, this);
+	board[62] = new Knight(black, { 6,7 }, this);
 
 	// Bishop
-	board[2] = Piece(bishop, white);
-	board[5] = Piece(bishop, white);
-	board[58] = Piece(bishop, black);
-	board[61] = Piece(bishop, black);
+	board[ 2] = new Bishop(white, { 2,0 }, this);
+	board[ 5] = new Bishop(white, { 5,0 }, this);
+	board[58] = new Bishop(black, { 2,7 }, this);
+	board[61] = new Bishop(black, { 5,7 }, this);
 
 	// Queens
-	board[3] = Piece(queen, white);
-	board[59] = Piece(queen, black);
+	board[ 3] = new Queen(white, { 3,0 }, this);
+	board[59] = new Queen(black, { 3,7 }, this);
 
 	// Kings
-	board[4] = Piece(king, white);
-	board[60] = Piece(king, black);
+	board[ 4] = new King(white, { 4,0 }, this);
+	board[60] = new King(black, { 4,7 }, this);
 
 	glGenTextures(1, &gBoard);
 	glBindTexture(GL_TEXTURE_2D, gBoard);
@@ -215,6 +215,10 @@ Board::Board(GLuint fbo) : fbo(fbo) {
 
 	colorShader = new Shader("../../../res/shaders/default.vert", "../../../res/shaders/default.frag");
 	pieceShader = new Shader("../../../res/shaders/piece.vert", "../../../res/shaders/piece.frag");
+
+	whose_turn = white;
+	white_king = 4;
+	black_king = 60;
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -225,6 +229,20 @@ Board::Board(GLuint fbo) : fbo(fbo) {
 \*-------------------------------------------------------------------------------------------------------------*/
 Board::Board(Board* base) {
 	for (int i = 0; i < 64; i++) board[i] = base->board[i];
+
+	white_check = base->white_check;
+	black_check = base->black_check;
+	white_king = base->white_king;
+	black_king = base->black_king;
+	whose_turn = base->whose_turn;
+	white_threat_map = base->white_threat_map;
+	black_threat_map = base->black_threat_map;
+	white_en_passant = base->white_en_passant;
+	black_en_passant = base->black_en_passant;
+	white_short_castle = base->white_short_castle;
+	black_short_castle = base->black_short_castle;
+	white_long_castle = base->white_long_castle;
+	black_long_castle = base->black_long_castle;
 }
 
 // Performs cleanup before deleting the board
@@ -267,35 +285,35 @@ void print_threatmap(uint64_t map) {
 bool Board::makeMove(Piece* p, int s, int d) {
 	// Make the move
 	board[d] = p;
-	board[s] = empty_sqr;
+	board[s] = nullptr;
 
 	// Extra move on castle
-	if (p.kind == king && abs((s % 8) - (d % 8)) == 2) {
-		if (p.color == white) {
+	if (instanceof<King>(p) && abs((s % 8) - (d % 8)) == 2) {
+		if (p->getColor() == white) {
 			if (d % 8 == 6) {
 				board[BIDX(5, 0)] = board[BIDX(7, 0)];
-				board[BIDX(7, 0)] = empty_sqr;
+				board[BIDX(7, 0)] = nullptr;
 			}
 			if (d % 8 == 2) {
 				board[BIDX(3, 0)] = board[BIDX(0, 0)];
-				board[BIDX(0, 0)] = empty_sqr;
+				board[BIDX(0, 0)] = nullptr;
 			}
 		}  
-		if (p.color == black) {
+		if (p->getColor() == black) {
 			if (d % 8 == 6) {
 				board[BIDX(5, 7)] = board[BIDX(7, 7)];
-				board[BIDX(7, 7)] = empty_sqr;
+				board[BIDX(7, 7)] = nullptr;
 			}
 			if (d % 8 == 2) {
 				board[BIDX(3, 7)] = board[BIDX(0, 7)];
-				board[BIDX(0, 7)] = empty_sqr;
+				board[BIDX(0, 7)] = nullptr;
 			}
 		}
 	}
 
 	// Check for promotion
-	int promotion_sqr = (p.color == white) ? 7 : 0;
-	if ((p.kind == pawn) && (d / 8 == promotion_sqr)) {
+	int promotion_sqr = (p->getColor() == white) ? 7 : 0;
+	if (instanceof<Pawn>(p) && (d / 8 == promotion_sqr)) {
 		promoting = d;
 		return 1;
 	}
@@ -308,7 +326,8 @@ bool Board::makeMove(Piece* p, int s, int d) {
 * Parameters: type - Kind of piece the pawn is promoting to
 * Description: Handles pawn promotion
 \*-------------------------------------------------------------------------------------------------------------*/
-void Board::promote(PieceType type) {
+template<class T>
+void Board::promote() {
 	if (promoting == -1) {
 		std::cerr << "No piece able to promote!";
 		return;
@@ -318,7 +337,8 @@ void Board::promote(PieceType type) {
 		return;
 	}
 
-	board[promoting].kind = type;
+	Pawn* toDelete = (Pawn*)board[promoting];
+	board[promoting] = new T(toDelete->getColor(), toDelete->getPosition(), this);
 	promoting = -1;
 }
 
