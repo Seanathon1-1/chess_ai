@@ -6,6 +6,8 @@
 #include <string>
 #include <iostream>
 
+enum Castling {	WHITE_SHORT, WHITE_LONG, BLACK_SHORT, BLACK_LONG };
+
 
 struct Square {
 	glm::vec3 top_left_corner;
@@ -49,19 +51,24 @@ class Board {
 	bool black_long_castle = 1;
 	// Are we waiting for the player to decide how to promote their pawn
 	bool wait_for_promote = 0;
-	friend class Piece;
+	Piece* held = nullptr;
 
 
+	std::string printBoardString();
+	void printBoardImage();
+	template<class T>
+	void promote();
 public:
 	Board(GLuint); // Creates new starting board
 	Board(Board*); // Copies board state
 	~Board();
 	bool makeMove(Piece*, int, int);
-	template<class T>
-	void promote();
-	std::string printBoardString();
-	void printBoardImage();
-	Piece* getPiece(int s) { return &board[s]; }
+	bool canCastle(Castling);
 	Color whoseTurn() { return whose_turn; }
+	Piece* getPiece(int s) { return board[s]; }
+	bool isHolding() { return (held != nullptr); }
 	void render();
+
+	void grab(Piece*);
+	Piece* drop();
 };

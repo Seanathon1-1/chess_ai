@@ -29,6 +29,7 @@ inline bool instanceof(const T* ptr) {
 	return dynamic_cast<const Base*>(ptr) != nullptr;
 }
 
+typedef std::vector<glm::vec2> vec2s;
 typedef std::vector<glm::vec3> vec3s;
 typedef std::vector<glm::vec4> vec4s;
 typedef std::vector<unsigned int> uints;

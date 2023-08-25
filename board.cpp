@@ -426,3 +426,20 @@ void Board::render() {
 	
 	printBoardImage(); 
 }
+
+bool Board::canCastle(Castling whichCastle) {
+	switch (whichCastle) {
+	case WHITE_SHORT:
+		bool transit_check = XTRC_BIT(black_threat_map, white_king + 1);
+		return (!white_check && !transit_check);
+	case WHITE_LONG:
+		bool transit_check = XTRC_BIT(black_threat_map, white_king - 1);
+		return (!white_check && !transit_check);
+	case BLACK_SHORT:
+		bool transit_check = XTRC_BIT(white_threat_map, black_king + 1);
+		return (!black_check && !transit_check);
+	case BLACK_LONG:
+		bool transit_check = XTRC_BIT(white_threat_map, black_king - 1);
+		return (!black_check && !transit_check);
+	}
+}

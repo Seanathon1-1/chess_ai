@@ -160,23 +160,19 @@ std::vector<glm::vec2>& King::legalMoves(bool calculateThreats = false) {
 	}
 
 	if (m_color == white) {
-		if (white_short_castle) {
-			bool transit_check = XTRC_BIT(black_threat_map, white_king + 1);
-			if (!white_check && !transit_check) possible_moves.push_back(BIDX(6, 0));
+		if (m_board->canCastle(WHITE_SHORT)) {
+			 moveSquares.push_back({ 6, 0 });
 		}
-		if (white_long_castle) {
-			bool transit_check = XTRC_BIT(black_threat_map, white_king - 1);
-			if (!white_check && !transit_check) possible_moves.push_back(BIDX(2, 0));
+		if (m_board->canCastle(WHITE_LONG)) {
+			 moveSquares.push_back({ 2, 0 });
 		}
 	}
 	if (m_color == black) {
-		if (black_short_castle) {
-			bool transit_check = XTRC_BIT(white_threat_map, black_king + 1);
-			if (!black_check && !transit_check) possible_moves.push_back(BIDX(6, 7));
+		if (m_board->canCastle(BLACK_SHORT)) {
+			moveSquares.push_back({ 6, 7 });
 		}
-		if (black_long_castle) {
-			bool transit_check = XTRC_BIT(white_threat_map, black_king - 1);
-			if (!black_check && !transit_check) possible_moves.push_back(BIDX(2, 7));
+		if (m_board->canCastle(BLACK_LONG)) {
+			moveSquares.push_back({ 2, 7 });
 		}
 	}
 

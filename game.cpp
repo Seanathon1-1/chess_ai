@@ -1,31 +1,20 @@
 #include "game.h"
 #include "imgui.h"
 
-/*-------------------------------------------------------------------------------------------------------------*\
-* Game::Game(GLuint)
-* 
-* Parameters: fbo - framebuffer object that this game will be drawn onto
-* Description: Creates a new game in the starting poistion and creates a Board object for it's representation
-\*-------------------------------------------------------------------------------------------------------------*/
 Game::Game(unsigned int fbo = 0) {
-
+	board = new Board(fbo);
 }
 
-/*-------------------------------------------------------------------------------------------------------------*\
-* Game::Game(Game*)
-* 
-* Parameters: base - Pointer to a Game instance that we want to copy
-* Description: Copies a position into a new Game instance. Mostly used to tell how a theoretical move will go
-\*-------------------------------------------------------------------------------------------------------------*/
 Game::Game(Game* base) {
 	board = new Board(base->board);
 }
 
-// I don't think I need a big comment for this destructor.
 Game::~Game() {
-	if (board) delete board;
+	delete board;
 }
 
+
+// TODO: move to board
 /*-------------------------------------------------------------------------------------------------------------*\
 * Game::makeUserMove(std::string)
 * 
@@ -83,18 +72,18 @@ void Game::makeUserMove(std::string move) {
 	}
 
 	// Makes the move and changes whose turn it is
-	makeLegalMove(*selected, select_idx, dest_idx);
+	makeLegalMove(selected, select_idx, dest_idx);
 
 	// Look for checkmate/stalemate
 	std::vector<int> nextPlayerMoves;
-	allLegalMoves(&nextPlayerMoves, whose_turn);
+	allLegalMoves(&nextPlayerMoves, board->whoseTurn());
 	if (nextPlayerMoves.size() == 0) {
 		// Checkmate
-		if (whose_turn == white && white_check) {
+		if (board->whoseTurn() == white && white_check) {
 			std::cout << "0-1" << std::endl;
 			return;
 		}
-		else if (whose_turn == black && black_check) {
+		else if (board->whoseTurn() == black && black_check) {
 			std::cout << "1-0" << std::endl;
 			return;
 		}
@@ -106,6 +95,8 @@ void Game::makeUserMove(std::string move) {
 		}
 	}
 }
+
+// TODO: move to board
 
 /*-------------------------------------------------------------------------------------------------------------*\
 * Game::makeLegalMove(Piece, int, int)
@@ -172,12 +163,14 @@ void Game::makeLegalMove(Piece* p, int src, int dest) {
 \*-------------------------------------------------------------------------------------------------------------*/
 void Game::allLegalMoves(std::vector<int>* moves, Color c) {
 	for (int i = 0; i < 64; i++) {
-		if (board->getPiece(i)->color == c) {
-			legalPieceMoves(moves, *board->getPiece(i), i % 8, i / 8);
+		if (board->getPiece(i)->getColor() == c) {
+			legalPieceMoves(moves, board->getPiece(i), i % 8, i / 8);
 		}
 		if (moves->size() > 0) return;
 	}
 }
+
+// TODO: move to board
 
 /*-------------------------------------------------------------------------------------------------------------*\
 * Game::legalPieceMoves(std::vector<int>*, Piece, int, int)
@@ -188,24 +181,24 @@ void Game::allLegalMoves(std::vector<int>* moves, Color c) {
 *             rank - Rank where the piece is located (numbered 0-7)
 * Description: Appends the 'moves' vector with the moves that Piece 'p' can move to
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank) {
+void Game::legalPieceMoves(std::vector<int>* moves, Piece* p, int file, int rank) {
 	int square; int f;
 
 	std::vector<int> possible_moves;
 
 	if (p.kind == pawn) {
-		int home_rank = (p.color == white) ? 1 : 6;
-		int passant_rank = (p.color == white) ? 4 : 3;
+		int home_rank = (p->getColor() == white) ? 1 : 6;
+		int passant_rank = (p->getColor() == white) ? 4 : 3;
 
 		// Normal move
-		square = BIDX(file, rank + (1 * p.color));
+		square = BIDX(file, rank + (1 * p->getColor()));
 		if (board->getPiece(square)->kind == open) {
 			possible_moves.push_back(square);
-		}
-		// Pawn power
-		square = BIDX(file, rank + (2 * p.color));
-		if (rank == home_rank && board->getPiece(square)->kind == open) {
-			possible_moves.push_back(square);
+			// Pawn power
+			square = BIDX(file, rank + (2 * p->getColor()));
+			if (rank == home_rank && board->getPiece(square)->kind == open) {
+				possible_moves.push_back(square);
+			}
 		}
 
 		// Captures
@@ -217,23 +210,6 @@ void Game::legalPieceMoves(std::vector<int>* moves, Piece p, int file, int rank)
 			if (f == file - 1) possible_moves.push_back(BIDX(f, rank + (1 * p.color)));
 			if (f == file + 1) possible_moves.push_back(BIDX(f, rank + (1 * p.color)));
 		}
-	}
-
-	if (p.kind == knight) {
-		knightSights(&possible_moves, file, rank, p.color);
-	}
-
-	if (p.kind == bishop || p.kind == queen) {
-		bishopSights(&possible_moves, file, rank, p.color);
-	}
-
-	if (p.kind == rook || p.kind == queen) {
-		rookSights(&possible_moves, file, rank, p.color);
-	}
-
-	if (p.kind == king) {
-		kingSights(&possible_moves, file, rank, p.color);
-		
 	}
 
 	// Look to see if move leaves player's king in check
@@ -267,62 +243,6 @@ void Game::pawnSights(std::vector<int>* moves, int file, int rank, Color c, bool
 	if (file != 7 && (board->getPiece(square)->color == (c * -1) || threat)) moves->push_back(square);
 }
 
-/*-------------------------------------------------------------------------------------------------------------*\
-* Game::knightSights(std::vector<int>*, int, int, Color, bool?)
-*
-* Parameters: moves - Pointer to vector where legal moves will be appended
-*             p - Which piece we are checking the moves for
-*             file - File where the piece is located (numbered 0-7)
-*             rank - Rank where the piece is located (numbered 0-7)
-*             threat - Optional, defaults to false. Are we checking threat maps or not?
-* Description: Looks at the possible moves for a knight and appends them to 'moves'
-\*-------------------------------------------------------------------------------------------------------------*/
-void Game::knightSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
-	
-}
-
-/*-------------------------------------------------------------------------------------------------------------*\
-* Game::bishopSights(std::vector<int>*, int, int, Color, bool?)
-*
-* Parameters: moves - Pointer to vector where legal moves will be appended
-*             p - Which piece we are checking the moves for
-*             file - File where the piece is located (numbered 0-7)
-*             rank - Rank where the piece is located (numbered 0-7)
-*             threat - Optional, defaults to false. Are we checking threat maps or not?
-* Description: Looks at the possible moves for a bishop and appends them to 'moves'
-\*-------------------------------------------------------------------------------------------------------------*/
-void Game::bishopSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
-	
-}
-
-/*-------------------------------------------------------------------------------------------------------------*\
-* Game::rookSights(std::vector<int>*, int, int, Color, bool?)
-*
-* Parameters: moves - Pointer to vector where legal moves will be appended
-*             p - Which piece we are checking the moves for
-*             file - File where the piece is located (numbered 0-7)
-*             rank - Rank where the piece is located (numbered 0-7)
-*             threat - Optional, defaults to false. Are we checking threat maps or not?
-* Description: Looks at the possible moves for a rook and appends them to 'moves'
-\*-------------------------------------------------------------------------------------------------------------*/
-void Game::rookSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
-	
-}
-
-/*-------------------------------------------------------------------------------------------------------------*\
-* Game::kingSights(std::vector<int>*, int, int, Color, bool?)
-*
-* Parameters: moves - Pointer to vector where legal moves will be appended
-*             p - Which piece we are checking the moves for
-*             file - File where the piece is located (numbered 0-7)
-*             rank - Rank where the piece is located (numbered 0-7)
-*             threat - Optional, defaults to false. Are we checking threat maps or not?
-* Description: Looks at the possible moves for a king and appends them to 'moves'
-\*-------------------------------------------------------------------------------------------------------------*/
-void Game::kingSights(std::vector<int>* moves, int file, int rank, Color c, bool threat) {
-	
-}
-
 // Sets a single bit in a 64-bit map to 1
 void set_bit(uint64_t* map, uint8_t bit) {
 	if (bit >= 64) {
@@ -331,6 +251,8 @@ void set_bit(uint64_t* map, uint8_t bit) {
 	*map |= (1ULL << bit);
 }
  
+// TODO: move to board
+
 /*-------------------------------------------------------------------------------------------------------------*\
 * Game::updateThreatMaps()
 * 
@@ -377,7 +299,7 @@ void Game::render() {
 
 	ImGui::Begin("Gameview");
 	ImGuiIO& io = ImGui::GetIO();
-	if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !selected) {
+	if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !board->isHolding()) {
 		ImVec2 wPos  = ImGui::GetWindowPos();
 		ImVec2 wSize = ImGui::GetWindowSize();
 		ImVec2 mPos  = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
@@ -385,24 +307,29 @@ void Game::render() {
 		char rank    = 8 - mPos.y / (wSize.y / 8);
 		Piece* p     = board->getPiece(BIDX(file, rank));
 		if (p && p->getColor() == board->whoseTurn()) {
-			selected = p;
-			p->select();
+			board->grab(p);
 		}
-	}
-	else if (ImGui::IsMouseReleased(0) && selected) {
+	} 
+	else if (ImGui::IsMouseReleased(0) && board->isHolding()) {
 		ImVec2 wPos = ImGui::GetWindowPos();
 		ImVec2 wSize = ImGui::GetWindowSize();
 		ImVec2 mPos = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
 		char file = mPos.x / (wSize.x / 8);
 		char rank = 8 - mPos.y / (wSize.y / 8);
-		Piece* p = board->getPiece(BIDX(file, rank));
+		Piece* targetPiece = board->getPiece(BIDX(file, rank));
 		
-		selected->selected = false;
-		selected = nullptr;
+		Piece* movedPiece = board->drop();
+		if (movedPiece) {
+			vec2s legals = movedPiece->legalMoves(false);sti
+			glm::vec2 attempt = { file,rank };
+			if (std::find(legals.begin(), legals.end(), attempt) != legals.end()) {
+				// TODO: move the piece
+			}
+		}
 	}
 	ImGui::End();
 
-	// Handle user entered moves
+	/*// Handle user entered moves
 	char move[16] = "";
 	bool move_entered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);
 
@@ -430,6 +357,6 @@ void Game::render() {
 			wait_for_promote = 0;
 			ImGui::SameLine();
 		}
-	}
+	}*/
 	ImGui::End();
 }

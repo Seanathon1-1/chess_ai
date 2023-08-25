@@ -16,14 +16,14 @@ public:
 	void deselect() { m_selected = false; }
 	bool isSelected() { return m_selected; }
 	
-	virtual std::vector<glm::vec2>& legalMoves(bool) = 0;
+	virtual vec2s& legalMoves(bool) = 0;
 	virtual char textboardSymbol() = 0;
 };
 
 class Knight : public Piece {
 public:
 	using Piece::Piece;
-	std::vector<glm::vec2>& legalMoves(bool) override;
+	vec2s& legalMoves(bool) override;
 	char textboardSymbol() override { return 'N'; }
 };
 
