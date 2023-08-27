@@ -1,8 +1,8 @@
 #pragma once
 
+#include "piece.h"
 #include "util.h"
 #include "shader.h"
-#include "piece.h"
 #include <string>
 #include <iostream>
 
@@ -58,6 +58,7 @@ class Board {
 	void printBoardImage();
 	template<class T>
 	void promote();
+	void updateThreatMaps();
 public:
 	Board(GLuint); // Creates new starting board
 	Board(Board*); // Copies board state
@@ -67,7 +68,11 @@ public:
 	Color whoseTurn() { return whose_turn; }
 	Piece* getPiece(int s) { return board[s]; }
 	bool isHolding() { return (held != nullptr); }
+	int getPassantFile(Color);
 	void render();
+	void makeUserMove(std::string move);
+	void makeLegalMove(Piece* p, int src, int dest);
+	bool hasLegalMove(Color);
 
 	void grab(Piece*);
 	Piece* drop();

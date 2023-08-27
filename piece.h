@@ -1,6 +1,7 @@
 #pragma once
+
 #include "util.h"
-#include "game.h"
+#include "board.h"
 
 class Piece {
 protected:
@@ -16,7 +17,7 @@ public:
 	void deselect() { m_selected = false; }
 	bool isSelected() { return m_selected; }
 	
-	virtual vec2s& legalMoves(bool) = 0;
+	virtual vec2s& legalMoves(bool = false) = 0;
 	virtual char textboardSymbol() = 0;
 };
 

@@ -80,7 +80,7 @@ std::vector<glm::vec2>& Bishop::legalMoves(bool calculateThreats = false) {
 	}
 
 	// TODO: check for checks
-
+	
 	return moveSquares;
 }
 
@@ -179,10 +179,34 @@ std::vector<glm::vec2>& King::legalMoves(bool calculateThreats = false) {
 	return moveSquares;
 }
 
-std::vector<glm::vec2>& Pawn::legalMoves(bool calculateThreats = false) {
+vec2s& Pawn::legalMoves(bool calculateThreats = false) {
 	std::vector<glm::vec2> moveSquares;
 
+	int home_rank = (m_color == white) ? 1 : 6;
+	int passant_rank = (m_color == white) ? 4 : 3;
 
+	// Normal move
+	int singleMoveRank = m_position.y  + m_color;
+	if (!m_board->getPiece(BIDX(m_position.x, singleMoveRank))) {
+		moveSquares.push_back({ m_position.x, singleMoveRank });
+		// Pawn power
+		int doubleMoveRank = singleMoveRank + m_color;
+		if (doubleMoveRank == home_rank && !m_board->getPiece(BIDX(m_position.x, doubleMoveRank))) {
+			moveSquares.push_back({ m_position.x, doubleMoveRank });
+		}
+	}
+
+	int leftFile = m_position.x - 1;
+	int rightFile = m_position.x + 1;
+	int rank = m_position.y + m_color;
+	if (leftFile != 0 && (m_board->getPiece(BIDX(leftFile, rank))->getColor() == (m_color * -1) || calculateThreats)) moveSquares.push_back({ leftFile, rank });
+	if (rightFile != 7 && (m_board->getPiece(BIDX(rightFile, rank))->getColor() == (m_color * -1) || calculateThreats)) moveSquares.push_back({ rightFile, rank });
+
+	// En passant TODO: move up above and track en passants using square, not file
+	if (rank == passant_rank) {
+		int f = m_board->getPassantFile(m_color);
+		if (f == m_position.x - 1 || f == m_position.x + 1) moveSquares.push_back({ f, rank + getColor() });
+	}
 
 	return moveSquares;
 }

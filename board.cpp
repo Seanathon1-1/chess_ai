@@ -15,8 +15,8 @@
 
 // Offsets to the corners of the board squares
 #define SQUARE_SIZE .25f
-glm::vec3 square_top_right_offset = glm::vec3(SQUARE_SIZE, 0.f, 0.f);
-glm::vec3 square_bottom_left_offset = glm::vec3(0.f,  -1 * SQUARE_SIZE, 0.f);
+glm::vec3 square_top_right_offset    = glm::vec3(SQUARE_SIZE, 0.f, 0.f);
+glm::vec3 square_bottom_left_offset  = glm::vec3(0.f,  -1 * SQUARE_SIZE, 0.f);
 glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 0.f);
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
@@ -29,10 +29,10 @@ const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 \*-------------------------------------------------------------------------------------------------------------*/
 void Square::draw(Shader* shader) {
 	// Vertex data for this square
-	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
-	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
+	glm::vec3 top_right_corner    = top_left_corner + square_top_right_offset;
+	glm::vec3 bottom_left_corner  = top_left_corner + square_bottom_left_offset;
 	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
-	glm::vec3 color = (is_dark) ? DARK_SQUARE_COLOR : LIGHT_SQUARE_COLOR;
+	glm::vec3 color               = (is_dark) ? DARK_SQUARE_COLOR : LIGHT_SQUARE_COLOR;
 
 	// Vertex and index buffer data
 	float vertices[] = {
@@ -76,8 +76,8 @@ void Square::draw(Shader* shader) {
 \*-------------------------------------------------------------------------------------------------------------*/
 void Square::drawTexture(Shader* shader) {
 	// Vertex data for this square
-	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
-	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
+	glm::vec3 top_right_corner    = top_left_corner + square_top_right_offset;
+	glm::vec3 bottom_left_corner  = top_left_corner + square_bottom_left_offset;
 	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
 
 	// Vertex and index buffer data 
@@ -230,19 +230,19 @@ Board::Board(GLuint fbo) : fbo(fbo) {
 Board::Board(Board* base) {
 	for (int i = 0; i < 64; i++) board[i] = base->board[i];
 
-	white_check = base->white_check;
-	black_check = base->black_check;
-	white_king = base->white_king;
-	black_king = base->black_king;
-	whose_turn = base->whose_turn;
-	white_threat_map = base->white_threat_map;
-	black_threat_map = base->black_threat_map;
-	white_en_passant = base->white_en_passant;
-	black_en_passant = base->black_en_passant;
+	white_check        = base->white_check;
+	black_check        = base->black_check;
+	white_king         = base->white_king;
+	black_king         = base->black_king;
+	whose_turn         = base->whose_turn;
+	white_threat_map   = base->white_threat_map;
+	black_threat_map   = base->black_threat_map;
+	white_en_passant   = base->white_en_passant;
+	black_en_passant   = base->black_en_passant;
 	white_short_castle = base->white_short_castle;
 	black_short_castle = base->black_short_castle;
-	white_long_castle = base->white_long_castle;
-	black_long_castle = base->black_long_castle;
+	white_long_castle  = base->white_long_castle;
+	black_long_castle  = base->black_long_castle;
 }
 
 // Performs cleanup before deleting the board
@@ -442,4 +442,194 @@ bool Board::canCastle(Castling whichCastle) {
 		bool transit_check = XTRC_BIT(white_threat_map, black_king - 1);
 		return (!black_check && !transit_check);
 	}
+}
+
+int Board::getPassantFile(Color attacking) {
+	return (attacking == white) ? black_en_passant : white_en_passant;
+}
+
+
+// Sets a single bit in a 64-bit map to 1
+void set_bit(uint64_t* map, uint8_t bit) {
+	if (bit >= 64) {
+		return;
+	}
+	*map |= (1ULL << bit);
+}
+
+/*-------------------------------------------------------------------------------------------------------------*\
+* Game::updateThreatMaps()
+*
+* Description: Sets the threat map for both players. A threat map tells which squares of the board are covered
+*              by a color's pieces and is used in calculating check/checkmate
+\*-------------------------------------------------------------------------------------------------------------*/
+void Board::updateThreatMaps() {
+	white_threat_map = 0ULL;
+	black_threat_map = 0ULL;
+
+	Piece* piece;
+	vec2s squares;
+	uint64_t* threat_map;
+	for (int i = 0; i < 64; i++) {
+		squares.clear();
+		piece = getPiece(i);
+		if (!piece) continue;
+		
+		threat_map = (piece->getColor() == white) ? &white_threat_map : &black_threat_map;
+		squares = piece->legalMoves(true);
+
+		for (glm::vec2 sqr : squares) {
+			int index = BIDX(sqr.x, sqr.y);
+			set_bit(threat_map, index);
+		}
+	}
+}
+
+/*-------------------------------------------------------------------------------------------------------------*\
+* Game::makeUserMove(std::string)
+*
+* Parameters: move - String representation of the move we want to make. Must be of form a1b2.
+* Description: Checks that a move is legal then makes the move and checks if the game is over.
+\*-------------------------------------------------------------------------------------------------------------*/
+void Board::makeUserMove(std::string move) {
+	// Moves should only be 4 characters long
+	if (move.length() != 4) {
+		std::cout << "Could not understand move, please enter a move like e2e4.\n";
+		return;
+	}
+
+	// Check that moves are in bounds
+	bool skip = 0;
+	for (int i = 0; i < 4; i++) {
+		int val = (i % 2 == 0) ? move[i] - 'a' : move[i] - '1';
+		if (!ON_BOARD(val)) {
+			std::cout << "Move out of bounds, moves should fit within a1-h8.\n";
+			std::cerr << "move[" << i << "]: " << val << std::endl;
+			skip = 1;
+			break;
+		}
+	}
+	if (skip) return;
+
+	int sf = move[0] - 'a';
+	int sr = move[1] - '1';
+	int df = move[2] - 'a';
+	int dr = move[3] - '1';
+
+	// Check that there is a piece on the initial square
+	int select_idx = BIDX(sf, sr);
+	Piece* selected = getPiece(select_idx);
+	if (!selected) {
+		std::cout << "No piece selected to move.\n";
+		return;
+	}
+
+	// Check that it is the correct player's turn
+	if (selected->getColor() != whoseTurn()) {
+		std::cout << "Can't move other player's piece.\n";
+		return;
+	}
+
+	// Check if the destination is a legal move
+	int dest_idx = BIDX(df, dr);
+	vec2s moves_possible = selected->legalMoves(false);
+	bool move_exists = 0;
+	for (glm::vec2 move : moves_possible) if (BIDX(move.x, move.y) == dest_idx) { move_exists = 1; break; }
+	if (!move_exists) {
+		std::cout << "Move is not legal.\n";
+		return;
+	}
+
+	// Makes the move and changes whose turn it is
+	makeLegalMove(selected, select_idx, dest_idx);
+
+	// Look for checkmate/stalemate
+	if (hasLegalMove(whoseTurn())) {
+		// Checkmate
+		if (whoseTurn() == white && white_check) {
+			std::cout << "0-1" << std::endl;
+			return;
+		}
+		else if (whoseTurn() == black && black_check) {
+			std::cout << "1-0" << std::endl;
+			return;
+		}
+
+		// Stalemate
+		else {
+			std::cout << ".5-.5" << std::endl;
+			return;
+		}
+	}
+}
+
+/*-------------------------------------------------------------------------------------------------------------*\
+* Game::makeLegalMove(Piece, int, int)
+*
+* Parameters: p - Piece that is moving
+*             src - Index of the square FROM which the Piece is moving
+*             dest - Index of the square TO which the Piece is moving
+* Description: Makes the move on the board and accordingly updates the game state, such as castling availablity,
+*              en passant opportunities, whose turn, etc.
+\*-------------------------------------------------------------------------------------------------------------*/
+void Board::makeLegalMove(Piece* p, int src, int dest) {
+	wait_for_promote |= makeMove(p, src, dest);
+
+	// Look for check
+	updateThreatMaps();
+	black_check = XTRC_BIT(white_threat_map, black_king);
+	white_check = XTRC_BIT(black_threat_map, white_king);
+
+	white_en_passant = -1;
+	black_en_passant = -1;
+	// Enforce castling restrictions
+	if (instanceof<King>(p)) {
+		if (p->getColor() == white) {
+			white_short_castle = 0;
+			white_long_castle = 0;
+			white_king = dest;
+		}
+		if (p->getColor() == black) {
+			black_short_castle = 0;
+			black_long_castle = 0;
+			black_king = dest;
+		}
+	} else if (instanceof<Rook>(p)) {
+		if (p->getColor() == white) {
+			if (src % 8 == 7 && src / 8 == 0) white_short_castle = 0;
+			if (src % 8 == 0 && src / 8 == 0) white_long_castle = 0;
+		}
+		if (p->getColor() == black) {
+			if (src % 8 == 7 && src / 8 == 7) black_short_castle = 0;
+			if (src % 8 == 0 && src / 8 == 7) black_long_castle = 0;
+		}
+	} else if (instanceof<Pawn>(p)) {
+		// Check if en passant is available for next move
+		int dist = abs((dest / 8) - (src / 8));
+		int pawn_file = src % 8;
+		if (dist == 2) (p->getColor() == white) ? white_en_passant = pawn_file : black_en_passant = pawn_file;
+	}
+
+	// Other player's turn
+	if (whose_turn == white) whose_turn = black;
+	else whose_turn = white;
+}
+
+bool Board::hasLegalMove(Color c) {
+	for (int i = 0; i < 64; i++) {
+		Piece* p = getPiece(i);
+		if (!p) continue;
+		if (p->getColor() == c) {
+			if (p->legalMoves().size() != 0) return true;
+		}
+	}
+	return false;
+}
+
+void Board::grab(Piece* p) { 
+	selected = p;
+}
+
+Piece* Board::drop() {
+	selected = nullptr;
 }
