@@ -16,49 +16,51 @@ public:
 	void select() { m_selected = true; }
 	void deselect() { m_selected = false; }
 	bool isSelected() { return m_selected; }
+	glm::vec2 getPosition() { return m_position; }
+	void place(glm::vec2 pos) { m_position = pos; }
 	
-	virtual vec2s& legalMoves(bool = false) = 0;
+	virtual vec2s* legalMoves(bool = false) = 0;
 	virtual char textboardSymbol() = 0;
 };
 
 class Knight : public Piece {
 public:
 	using Piece::Piece;
-	vec2s& legalMoves(bool) override;
+	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'N'; }
 };
 
 class Bishop : public Piece {
 public:
 	using Piece::Piece;
-	std::vector<glm::vec2>& legalMoves(bool) override;
+	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'B'; }
 };
 
 class Rook : public Piece {
 public:
 	using Piece::Piece;
-	std::vector<glm::vec2>& legalMoves(bool) override;
+	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'R'; }
 };
 
 class Queen : public Piece {
 public:
 	using Piece::Piece;
-	std::vector<glm::vec2>& legalMoves(bool) override;
+	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'Q'; }
 };
 
 class King : public Piece {
 public:
 	using Piece::Piece;
-	std::vector<glm::vec2>& legalMoves(bool) override;
+	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'K'; }
 };
 
 class Pawn : public Piece {
 public:
 	using Piece::Piece;
-	std::vector<glm::vec2>& legalMoves(bool) override;
+	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'P'; }
 };

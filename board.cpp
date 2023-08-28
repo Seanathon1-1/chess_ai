@@ -1,4 +1,5 @@
 #include "board.h"
+#include "piece.h"
 #include "imgui.h"
 #include "gl/glew.h"
 #include <cctype>
@@ -156,7 +157,7 @@ void Square::drawTexture(Shader* shader) {
 * Description: Creates a new Board with the classical starting position
 \*-------------------------------------------------------------------------------------------------------------*/
 Board::Board(GLuint fbo) : fbo(fbo) {
- 	memset(&board, 0, sizeof(Piece) * 64);
+ 	memset(&board, 0, sizeof(Piece*) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
 		board[8 + file]  = new Pawn(white, { file, 1 }, this);
@@ -332,7 +333,7 @@ void Board::promote() {
 		std::cerr << "No piece able to promote!";
 		return;
 	}
-	if (type == open || type == pawn) {
+	if (T != Queen && T != Rook && T != Bishop && T != Knight) {
 		std::cerr << "Invalid promotion type!";
 		return;
 	}
@@ -340,6 +341,7 @@ void Board::promote() {
 	Pawn* toDelete = (Pawn*)board[promoting];
 	board[promoting] = new T(toDelete->getColor(), toDelete->getPosition(), this);
 	promoting = -1;
+	delete toDelete;
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -356,7 +358,8 @@ std::string Board::printBoardString() {
 		s += "| ";
 		for (int file = 0; file < 8; file++) {
 			p = board[BIDX(file, rank)];
-			piece_c = (p->getColor() == white) ? tolower(p->textboardSymbol()) : p->textboardSymbol();
+			if (p) piece_c = (p->getColor() == white) ? tolower(p->textboardSymbol()) : p->textboardSymbol();
+			else piece_c = ' ';
 			s += piece_c;
 			s += " | ";
 		}
@@ -390,14 +393,14 @@ void Board::printBoardImage() {
 			Square* s = new Square(top_left, isBlack, p);
 			s->draw(colorShader);
 
-			if (p->isSelected()) {
-				delete s;
-				ImVec2 mPos = ImGui::GetMousePos();
-				top_left.x = mPos.x / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 3;
-				top_left.y = mPos.y / BOARD_SIZE * 2 + SQUARE_SIZE / 2 - 1;
-				s = new Square(top_left, isBlack, p);
-			}
 			if (p) {
+				if (p->isSelected()) {
+					delete s;
+					ImVec2 mPos = ImGui::GetMousePos();
+					top_left.x = mPos.x / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 3;
+					top_left.y = mPos.y / BOARD_SIZE * 2 + SQUARE_SIZE / 2 - 1;
+					s = new Square(top_left, isBlack, p);
+				}
 				s->drawTexture(pieceShader);
 			}
 			delete s;
@@ -428,20 +431,22 @@ void Board::render() {
 }
 
 bool Board::canCastle(Castling whichCastle) {
+	bool transit_check;
 	switch (whichCastle) {
 	case WHITE_SHORT:
-		bool transit_check = XTRC_BIT(black_threat_map, white_king + 1);
+		transit_check = XTRC_BIT(black_threat_map, white_king + 1);
 		return (!white_check && !transit_check);
 	case WHITE_LONG:
-		bool transit_check = XTRC_BIT(black_threat_map, white_king - 1);
+		transit_check = XTRC_BIT(black_threat_map, white_king - 1);
 		return (!white_check && !transit_check);
 	case BLACK_SHORT:
-		bool transit_check = XTRC_BIT(white_threat_map, black_king + 1);
+		transit_check = XTRC_BIT(white_threat_map, black_king + 1);
 		return (!black_check && !transit_check);
 	case BLACK_LONG:
-		bool transit_check = XTRC_BIT(white_threat_map, black_king - 1);
+		transit_check = XTRC_BIT(white_threat_map, black_king - 1);
 		return (!black_check && !transit_check);
 	}
+	return false;
 }
 
 int Board::getPassantFile(Color attacking) {
@@ -468,20 +473,21 @@ void Board::updateThreatMaps() {
 	black_threat_map = 0ULL;
 
 	Piece* piece;
-	vec2s squares;
+	vec2s* squares;
 	uint64_t* threat_map;
 	for (int i = 0; i < 64; i++) {
-		squares.clear();
+		squares->clear();
 		piece = getPiece(i);
 		if (!piece) continue;
 		
 		threat_map = (piece->getColor() == white) ? &white_threat_map : &black_threat_map;
 		squares = piece->legalMoves(true);
 
-		for (glm::vec2 sqr : squares) {
+		for (glm::vec2 sqr : *squares) {
 			int index = BIDX(sqr.x, sqr.y);
 			set_bit(threat_map, index);
 		}
+		delete squares;
 	}
 }
 
@@ -532,13 +538,14 @@ void Board::makeUserMove(std::string move) {
 
 	// Check if the destination is a legal move
 	int dest_idx = BIDX(df, dr);
-	vec2s moves_possible = selected->legalMoves(false);
+	vec2s* moves_possible = selected->legalMoves(false);
 	bool move_exists = 0;
-	for (glm::vec2 move : moves_possible) if (BIDX(move.x, move.y) == dest_idx) { move_exists = 1; break; }
+	for (glm::vec2 move : *moves_possible) if (BIDX(move.x, move.y) == dest_idx) { move_exists = 1; break; }
 	if (!move_exists) {
 		std::cout << "Move is not legal.\n";
 		return;
 	}
+	delete moves_possible;
 
 	// Makes the move and changes whose turn it is
 	makeLegalMove(selected, select_idx, dest_idx);
@@ -620,16 +627,34 @@ bool Board::hasLegalMove(Color c) {
 		Piece* p = getPiece(i);
 		if (!p) continue;
 		if (p->getColor() == c) {
-			if (p->legalMoves().size() != 0) return true;
+			if (p->legalMoves()->size() != 0) return true;
 		}
 	}
 	return false;
 }
 
 void Board::grab(Piece* p) { 
-	selected = p;
+	held = p;
+	p->select();
+
 }
 
 Piece* Board::drop() {
-	selected = nullptr;
+	Piece* returnPiece = held;
+	held->deselect();
+	held = nullptr;
+	return returnPiece;
+}
+
+void Board::move(Piece* piece, glm::vec2 square) {
+	// Clear old spot
+	glm::vec2 origin = piece->getPosition();
+	board[(int)BIDX(origin.x, origin.y)] = nullptr;
+
+	// Move to new spot
+	piece->place(square);
+	board[(int)BIDX(square.x, square.y)] = piece;
+
+	// Change turns
+	whose_turn = (whose_turn == white) ? black : white;
 }

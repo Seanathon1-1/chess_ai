@@ -17,7 +17,7 @@
 #define WIN_TITLE "Chess AI"
 #define WIN_WIDTH  800
 #define WIN_HEIGHT 600
-#define NULL_UINT = 0xFFFFFFFF
+#define NULL_UINT 0xFFFFFFFF
 
 enum PieceType { open, pawn, knight, bishop, rook, queen, king };
 enum Color { black = -1, none, white };

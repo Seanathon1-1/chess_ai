@@ -1,11 +1,12 @@
 #pragma once
 
-#include "piece.h"
 #include "util.h"
 #include "shader.h"
 #include <string>
 #include <iostream>
 
+
+class Piece;
 enum Castling {	WHITE_SHORT, WHITE_LONG, BLACK_SHORT, BLACK_LONG };
 
 
@@ -24,7 +25,6 @@ public:
 class Board { 
 	// essential data
 	Piece* board[64];
-	Piece* selected = nullptr;
 	int promoting = -1;
  	// graphical components
 	unsigned int gBoard = 0;
@@ -75,5 +75,6 @@ public:
 	bool hasLegalMove(Color);
 
 	void grab(Piece*);
+	void move(Piece*, glm::vec2);
 	Piece* drop();
 };

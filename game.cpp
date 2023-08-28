@@ -1,4 +1,5 @@
 #include "game.h"
+#include "piece.h"
 #include "imgui.h"
 
 Game::Game(unsigned int fbo = 0) {
@@ -60,11 +61,13 @@ void Game::render() {
 		
 		Piece* movedPiece = board->drop();
 		if (movedPiece) {
-			vec2s legals = movedPiece->legalMoves(false);
+			vec2s* legals = movedPiece->legalMoves(false);
 			glm::vec2 attempt = { file,rank };
-			if (std::find(legals.begin(), legals.end(), attempt) != legals.end()) {
+			if (std::find(legals->begin(), legals->end(), attempt) != legals->end()) {
 				// TODO: move the piece
+				board->move(movedPiece, attempt);
 			}
+			delete legals;
 		}
 	}
 	ImGui::End();
@@ -98,4 +101,5 @@ void Game::render() {
 			ImGui::SameLine();
 		}
 	}*/
+	ImGui::End();
 }
