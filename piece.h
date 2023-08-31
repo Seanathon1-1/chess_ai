@@ -10,8 +10,10 @@ protected:
 	Board*    m_board;
 	bool      m_selected;
 
+	bool check4check(glm::vec2);
 public:
 	Piece(Color, glm::vec2, Board*);
+
 	Color getColor() { return m_color; }
 	void select() { m_selected = true; }
 	void deselect() { m_selected = false; }
@@ -19,6 +21,7 @@ public:
 	glm::vec2 getPosition() { return m_position; }
 	void place(glm::vec2 pos) { m_position = pos; }
 	
+	virtual Piece* copy(Board*) = 0;
 	virtual vec2s* legalMoves(bool = false) = 0;
 	virtual char textboardSymbol() = 0;
 };
@@ -26,6 +29,7 @@ public:
 class Knight : public Piece {
 public:
 	using Piece::Piece;
+	Piece* copy(Board*) override;
 	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'N'; }
 };
@@ -34,12 +38,14 @@ class Bishop : public Piece {
 public:
 	using Piece::Piece;
 	vec2s* legalMoves(bool) override;
+	Piece* copy(Board*) override;
 	char textboardSymbol() override { return 'B'; }
 };
 
 class Rook : public Piece {
 public:
 	using Piece::Piece;
+	Piece* copy(Board*) override;
 	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'R'; }
 };
@@ -47,6 +53,7 @@ public:
 class Queen : public Piece {
 public:
 	using Piece::Piece;
+	Piece* copy(Board*) override;
 	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'Q'; }
 };
@@ -54,6 +61,7 @@ public:
 class King : public Piece {
 public:
 	using Piece::Piece;
+	Piece* copy(Board*) override;
 	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'K'; }
 };
@@ -61,6 +69,7 @@ public:
 class Pawn : public Piece {
 public:
 	using Piece::Piece;
+	Piece* copy(Board*) override;
 	vec2s* legalMoves(bool) override;
 	char textboardSymbol() override { return 'P'; }
 };

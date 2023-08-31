@@ -46,7 +46,7 @@ void Game::render() {
 		ImVec2 mPos  = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
 		char file    = mPos.x / (wSize.x / 8);
 		char rank    = 8 - mPos.y / (wSize.y / 8);
-		Piece* p     = board->getPiece(BIDX(file, rank));
+		Piece* p     = board->getPiece(BIDX(glm::vec2(file, rank)));
 		if (p && p->getColor() == board->whoseTurn()) {
 			board->grab(p);
 		}
@@ -57,7 +57,7 @@ void Game::render() {
 		ImVec2 mPos = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
 		char file = mPos.x / (wSize.x / 8);
 		char rank = 8 - mPos.y / (wSize.y / 8);
-		Piece* targetPiece = board->getPiece(BIDX(file, rank));
+		Piece* targetPiece = board->getPiece(BIDX(glm::vec2(file, rank)));
 		
 		Piece* movedPiece = board->drop();
 		if (movedPiece) {
@@ -65,7 +65,7 @@ void Game::render() {
 			glm::vec2 attempt = { file,rank };
 			if (std::find(legals->begin(), legals->end(), attempt) != legals->end()) {
 				// TODO: move the piece
-				board->move(movedPiece, attempt);
+				board->makeLegalMove(movedPiece, attempt);
 			}
 			delete legals;
 		}

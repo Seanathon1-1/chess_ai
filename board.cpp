@@ -229,8 +229,10 @@ Board::Board(GLuint fbo) : fbo(fbo) {
 * Description: Makes a new board which is a copy of 'base'. Used to test moves
 \*-------------------------------------------------------------------------------------------------------------*/
 Board::Board(Board* base) {
-	for (int i = 0; i < 64; i++) board[i] = base->board[i];
-
+	for (int i = 0; i < 64; i++) {
+		if (base->board[i]) board[i] = (base->board[i])->copy(this);
+		else board[i] = nullptr;
+	}
 	white_check        = base->white_check;
 	black_check        = base->black_check;
 	white_king         = base->white_king;
@@ -250,6 +252,7 @@ Board::Board(Board* base) {
 Board::~Board() {
 	if (pieceShader) delete pieceShader;
 	if (colorShader) delete colorShader;
+	for (Piece* p : board) if (p) delete p;
 	glDeleteTextures(1, &gBoard);
 }
 
@@ -265,7 +268,7 @@ void print_threatmap(uint64_t map) {
 	for (int rank = 7; rank >= 0; rank--) {
 		std::cout << "| ";
 		for (int file = 0; file < 8; file++) {
-			sqr = BIDX(file, rank);
+			sqr = BIDX(glm::vec2( file, rank ));
 			std::cout << (char)(XTRC_BIT(map, sqr) + '0');
 			std::cout << " | ";
 		}
@@ -288,37 +291,7 @@ bool Board::makeMove(Piece* p, int s, int d) {
 	board[d] = p;
 	board[s] = nullptr;
 
-	// Extra move on castle
-	if (instanceof<King>(p) && abs((s % 8) - (d % 8)) == 2) {
-		if (p->getColor() == white) {
-			if (d % 8 == 6) {
-				board[BIDX(5, 0)] = board[BIDX(7, 0)];
-				board[BIDX(7, 0)] = nullptr;
-			}
-			if (d % 8 == 2) {
-				board[BIDX(3, 0)] = board[BIDX(0, 0)];
-				board[BIDX(0, 0)] = nullptr;
-			}
-		}  
-		if (p->getColor() == black) {
-			if (d % 8 == 6) {
-				board[BIDX(5, 7)] = board[BIDX(7, 7)];
-				board[BIDX(7, 7)] = nullptr;
-			}
-			if (d % 8 == 2) {
-				board[BIDX(3, 7)] = board[BIDX(0, 7)];
-				board[BIDX(0, 7)] = nullptr;
-			}
-		}
-	}
-
-	// Check for promotion
-	int promotion_sqr = (p->getColor() == white) ? 7 : 0;
-	if (instanceof<Pawn>(p) && (d / 8 == promotion_sqr)) {
-		promoting = d;
-		return 1;
-	}
-	return 0;
+	return false;
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -357,7 +330,7 @@ std::string Board::printBoardString() {
 	for (int rank = 7; rank >= 0; rank--) {
 		s += "| ";
 		for (int file = 0; file < 8; file++) {
-			p = board[BIDX(file, rank)];
+			p = board[(int)BIDX(glm::vec2(file, rank))];
 			if (p) piece_c = (p->getColor() == white) ? tolower(p->textboardSymbol()) : p->textboardSymbol();
 			else piece_c = ' ';
 			s += piece_c;
@@ -473,22 +446,22 @@ void Board::updateThreatMaps() {
 	black_threat_map = 0ULL;
 
 	Piece* piece;
-	vec2s* squares;
+	vec2s* squares = new vec2s;
 	uint64_t* threat_map;
 	for (int i = 0; i < 64; i++) {
 		squares->clear();
-		piece = getPiece(i);
+		piece = board[i];
 		if (!piece) continue;
 		
 		threat_map = (piece->getColor() == white) ? &white_threat_map : &black_threat_map;
 		squares = piece->legalMoves(true);
 
 		for (glm::vec2 sqr : *squares) {
-			int index = BIDX(sqr.x, sqr.y);
+			int index = BIDX(glm::vec2(sqr.x, sqr.y));
 			set_bit(threat_map, index);
 		}
-		delete squares;
 	}
+	delete squares;
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -523,7 +496,7 @@ void Board::makeUserMove(std::string move) {
 	int dr = move[3] - '1';
 
 	// Check that there is a piece on the initial square
-	int select_idx = BIDX(sf, sr);
+	int select_idx = BIDX(glm::vec2(sf, sr));
 	Piece* selected = getPiece(select_idx);
 	if (!selected) {
 		std::cout << "No piece selected to move.\n";
@@ -537,10 +510,10 @@ void Board::makeUserMove(std::string move) {
 	}
 
 	// Check if the destination is a legal move
-	int dest_idx = BIDX(df, dr);
+	int dest_idx = BIDX(glm::vec2(df, dr));
 	vec2s* moves_possible = selected->legalMoves(false);
 	bool move_exists = 0;
-	for (glm::vec2 move : *moves_possible) if (BIDX(move.x, move.y) == dest_idx) { move_exists = 1; break; }
+	for (glm::vec2 move : *moves_possible) if (BIDX(glm::vec2(move.x, move.y)) == dest_idx) { move_exists = 1; break; }
 	if (!move_exists) {
 		std::cout << "Move is not legal.\n";
 		return;
@@ -548,7 +521,7 @@ void Board::makeUserMove(std::string move) {
 	delete moves_possible;
 
 	// Makes the move and changes whose turn it is
-	makeLegalMove(selected, select_idx, dest_idx);
+	makeLegalMove(selected, { select_idx, dest_idx });
 
 	// Look for checkmate/stalemate
 	if (hasLegalMove(whoseTurn())) {
@@ -579,8 +552,38 @@ void Board::makeUserMove(std::string move) {
 * Description: Makes the move on the board and accordingly updates the game state, such as castling availablity,
 *              en passant opportunities, whose turn, etc.
 \*-------------------------------------------------------------------------------------------------------------*/
-void Board::makeLegalMove(Piece* p, int src, int dest) {
-	wait_for_promote |= makeMove(p, src, dest);
+void Board::makeLegalMove(Piece* p, glm::vec2 target) {
+	glm::vec2 src = p->getPosition();
+
+	// Enforce castling restrictions
+	if (instanceof<King>(p)) {
+		if (p->getColor() == white) {
+			white_short_castle = 0;
+			white_long_castle = 0;
+			white_king = BIDX(target);
+		}
+		if (p->getColor() == black) {
+			black_short_castle = 0;
+			black_long_castle = 0;
+			black_king = BIDX(target);
+		}
+	} else if (instanceof<Rook>(p)) {
+		if (p->getColor() == white) {
+			if (src.x == 7 && src.y == 0) white_short_castle = 0;
+			if (src.x == 0 && src.y == 0) white_long_castle = 0;
+		}
+		if (p->getColor() == black) {
+			if (src.x == 7 && src.y == 7) black_short_castle = 0;
+			if (src.x == 0 && src.y == 7) black_long_castle = 0;
+		}
+	} else if (instanceof<Pawn>(p)) {
+		// Check if en passant is available for next move
+		int dist = abs(target.y - src.y);
+		int pawn_file = src.x;
+		if (dist == 2) (p->getColor() == white) ? white_en_passant = pawn_file : black_en_passant = pawn_file;
+	}
+
+	wait_for_promote |= move(p, target);
 
 	// Look for check
 	updateThreatMaps();
@@ -589,33 +592,7 @@ void Board::makeLegalMove(Piece* p, int src, int dest) {
 
 	white_en_passant = -1;
 	black_en_passant = -1;
-	// Enforce castling restrictions
-	if (instanceof<King>(p)) {
-		if (p->getColor() == white) {
-			white_short_castle = 0;
-			white_long_castle = 0;
-			white_king = dest;
-		}
-		if (p->getColor() == black) {
-			black_short_castle = 0;
-			black_long_castle = 0;
-			black_king = dest;
-		}
-	} else if (instanceof<Rook>(p)) {
-		if (p->getColor() == white) {
-			if (src % 8 == 7 && src / 8 == 0) white_short_castle = 0;
-			if (src % 8 == 0 && src / 8 == 0) white_long_castle = 0;
-		}
-		if (p->getColor() == black) {
-			if (src % 8 == 7 && src / 8 == 7) black_short_castle = 0;
-			if (src % 8 == 0 && src / 8 == 7) black_long_castle = 0;
-		}
-	} else if (instanceof<Pawn>(p)) {
-		// Check if en passant is available for next move
-		int dist = abs((dest / 8) - (src / 8));
-		int pawn_file = src % 8;
-		if (dist == 2) (p->getColor() == white) ? white_en_passant = pawn_file : black_en_passant = pawn_file;
-	}
+
 
 	// Other player's turn
 	if (whose_turn == white) whose_turn = black;
@@ -633,6 +610,10 @@ bool Board::hasLegalMove(Color c) {
 	return false;
 }
 
+bool Board::isInCheck(Color c) {
+	return c == black && black_check || c == white && white_check;
+}
+
 void Board::grab(Piece* p) { 
 	held = p;
 	p->select();
@@ -646,15 +627,45 @@ Piece* Board::drop() {
 	return returnPiece;
 }
 
-void Board::move(Piece* piece, glm::vec2 square) {
+bool Board::move(Piece* piece, glm::vec2 square) {
 	// Clear old spot
 	glm::vec2 origin = piece->getPosition();
-	board[(int)BIDX(origin.x, origin.y)] = nullptr;
+	board[(int)BIDX(glm::vec2(origin.x, origin.y))] = nullptr;
 
 	// Move to new spot
 	piece->place(square);
-	board[(int)BIDX(square.x, square.y)] = piece;
+	board[(int)BIDX(glm::vec2(square.x, square.y))] = piece;
 
-	// Change turns
-	whose_turn = (whose_turn == white) ? black : white;
+
+	// Extra move on castle
+	if (instanceof<King>(piece) && abs(origin.x - square.x) == 2) {
+		if (piece->getColor() == white) {
+			if (square.x == 6) {
+				board[(int)BIDX(glm::vec2(5, 0))] = board[(int)BIDX(glm::vec2(7, 0))];
+				board[(int)BIDX(glm::vec2(7, 0))] = nullptr;
+			}
+			if (square.x == 2) {
+				board[(int)BIDX(glm::vec2(3, 0))] = board[(int)BIDX(glm::vec2(0, 0))];
+				board[(int)BIDX(glm::vec2(0, 0))] = nullptr;
+			}
+		}
+		if (piece->getColor() == black) {
+			if (square.x == 6) {
+				board[(int)BIDX(glm::vec2(5, 7))] = board[(int)BIDX(glm::vec2(7, 7))];
+				board[(int)BIDX(glm::vec2(7, 7))] = nullptr;
+			}
+			if (square.x == 2) {
+				board[(int)BIDX(glm::vec2(3, 7))] = board[(int)BIDX(glm::vec2(0, 7))];
+				board[(int)BIDX(glm::vec2(0, 7))] = nullptr;
+			}
+		}
+	}
+
+	// Check for promotion
+	int promotion_sqr = (piece->getColor() == white) ? 7 : 0;
+	if (instanceof<Pawn>(piece) && (square.y == promotion_sqr)) {
+		promoting = square.x;
+		return 1;
+	}
+	return 0;
 }

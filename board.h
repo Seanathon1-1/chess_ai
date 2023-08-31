@@ -70,11 +70,12 @@ public:
 	bool isHolding() { return (held != nullptr); }
 	int getPassantFile(Color);
 	void render();
-	void makeUserMove(std::string move);
-	void makeLegalMove(Piece* p, int src, int dest);
+	void makeUserMove(std::string);
+	void makeLegalMove(Piece*, glm::vec2);
 	bool hasLegalMove(Color);
+	bool isInCheck(Color);
 
 	void grab(Piece*);
-	void move(Piece*, glm::vec2);
+	bool move(Piece*, glm::vec2);
 	Piece* drop();
 };

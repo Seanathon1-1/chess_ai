@@ -9,6 +9,22 @@ Piece::Piece(Color c, glm::vec2 square, Board* b) {
 	m_selected = false;
 }
 
+Piece* Piece::copy(Board* newBoard) {
+	return new Knight(m_color, m_position, newBoard);
+}
+
+bool Piece::check4check(glm::vec2 move) {
+	Board* testingMove = new Board(m_board);
+	testingMove->move(this, move);
+	bool inCheck = testingMove->isInCheck(m_color);
+	delete testingMove;
+	return inCheck;
+}
+
+Piece* Knight::copy(Board* newBoard) {
+	return new Knight(m_color, m_position, newBoard);
+}
+
 vec2s* Knight::legalMoves(bool calculateThreats = false) {
 	// Vectors of move directions for the knight
 	vec2s knightMoves = {
@@ -21,19 +37,21 @@ vec2s* Knight::legalMoves(bool calculateThreats = false) {
 	for (int i = 0; i < knightMoves.size(); i++) {
 		glm::vec2 potentialMove = m_position + knightMoves[i];
 		if (!ON_BOARD(potentialMove.x) || !ON_BOARD(potentialMove.y)) continue;
-		Piece* target = m_board->getPiece(BIDX(potentialMove.x, potentialMove.y));
+		Piece* target = m_board->getPiece(BIDX(glm::vec2(potentialMove.x, potentialMove.y)));
 		Color target_color = (target) ? target->getColor() : none;
 
 		bool inbounds = IN_RANGE(potentialMove.x, 0, 7) && IN_RANGE(potentialMove.y, 0, 7);
 		bool checkSameColor = (target_color != m_color) || calculateThreats;
-		if (inbounds && checkSameColor) {
+		if (inbounds && checkSameColor && !check4check(potentialMove)) {
 			moveSquares->push_back(potentialMove);
 		}
-		
-		// TODO: check for check
 	}
 
 	return moveSquares;
+}
+
+Piece* Bishop::copy(Board* newBoard) {
+	return new Bishop(m_color, m_position, newBoard);
 }
 
 vec2s* Bishop::legalMoves(bool calculateThreats = false) {
@@ -44,46 +62,48 @@ vec2s* Bishop::legalMoves(bool calculateThreats = false) {
 	// NW
 	f = (int)m_position.x - 1; r = (int)m_position.y + 1;
 	while (f >= 0 && r < 8) {
-		q_pieceHere = m_board->getPiece(BIDX(f, r));
-		if (!q_pieceHere) moveSquares->push_back({f, r});
+		q_pieceHere = m_board->getPiece(BIDX(glm::vec2(f, r)));
+		if (!q_pieceHere && !check4check({f, r})) moveSquares->push_back({f, r});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back({f, r}); break; }
+		else if (!check4check({f, r})) { moveSquares->push_back({f, r}); break; }
 		f--; r++;
 	}
 
 	// NE
 	f = (int)m_position.x + 1; r = (int)m_position.y + 1;
 	while (f < 8 && r < 8) {
-		q_pieceHere = m_board->getPiece(BIDX(f, r));
-		if (!q_pieceHere) moveSquares->push_back({f, r});
+		q_pieceHere = m_board->getPiece(BIDX(glm::vec2(f, r)));
+		if (!q_pieceHere && !check4check({ f, r })) moveSquares->push_back({f, r});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back({f, r}); break; }
+		else if (!check4check({ f, r })) { moveSquares->push_back({f, r}); break; }
 		f++; r++;
 	}
 
 	// SW
 	f = (int)m_position.x - 1; r = (int)m_position.y - 1;
 	while (f >= 0 && r >= 0) {
-		q_pieceHere = m_board->getPiece(BIDX(f, r));
-		if (!q_pieceHere) moveSquares->push_back({f, r});
+		q_pieceHere = m_board->getPiece(BIDX(glm::vec2(f, r)));
+		if (!q_pieceHere && !check4check({ f, r })) moveSquares->push_back({f, r});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back({f, r}); break; }
+		else if (!check4check({ f, r })) { moveSquares->push_back({f, r}); break; }
 		f--; r--;
 	}
 
 	// SE
 	f = (int)m_position.x + 1; r = (int)m_position.y - 1;
 	while (f < 8 && r >= 0) {
-		q_pieceHere = m_board->getPiece(BIDX(f, r));
-		if (!q_pieceHere) moveSquares->push_back({f, r});
+		q_pieceHere = m_board->getPiece(BIDX(glm::vec2(f, r)));
+		if (!q_pieceHere && !check4check({ f, r })) moveSquares->push_back({f, r});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back({f, r}); break; }
+		else if (!check4check({ f, r })) { moveSquares->push_back({f, r}); break; }
 		f++; r--;
 	}
 
-	// TODO: check for checks
-	
 	return moveSquares;
+}
+
+Piece* Rook::copy(Board* newBoard) {
+	return new Rook(m_color, m_position, newBoard);
 }
 
 vec2s* Rook::legalMoves(bool calculateThreats = false) {
@@ -93,39 +113,41 @@ vec2s* Rook::legalMoves(bool calculateThreats = false) {
 
 	// Left
 	for (f = (int)m_position.x - 1; f >= 0; f--) {
-		q_pieceHere = m_board->getPiece(BIDX(f, (int)m_position.y));
-		if (!q_pieceHere) moveSquares->push_back({ f, (int)m_position.y });
+		q_pieceHere = m_board->getPiece(BIDX(glm::vec2(f, (int)m_position.y)));
+		if (!q_pieceHere && !check4check({ f, (int)m_position.y })) moveSquares->push_back({ f, (int)m_position.y });
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back({ f, (int)m_position.y }); break; }
+		else if (!check4check({ f, (int)m_position.y })) { moveSquares->push_back({ f, (int)m_position.y }); break; }
 	}
 
 	// Right
 	for (f = (int)m_position.x + 1; f < 8; f++) {
-		q_pieceHere = m_board->getPiece(BIDX(f, (int)m_position.y));
-		if (!q_pieceHere) moveSquares->push_back({ f, (int)m_position.y });
+		q_pieceHere = m_board->getPiece(BIDX(glm::vec2(f, (int)m_position.y)));
+		if (!q_pieceHere && !check4check({ f, (int)m_position.y })) moveSquares->push_back({ f, (int)m_position.y });
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back({ f, (int)m_position.y }); break; }
+		else if (!check4check({ f, (int)m_position.y })) { moveSquares->push_back({ f, (int)m_position.y }); break; }
 	}
 
 	// Up
 	for (r = (int)m_position.y + 1; r < 8; r++) {
-		q_pieceHere = m_board->getPiece(BIDX((int)m_position.x, r));
-		if (!q_pieceHere) moveSquares->push_back({ (int)m_position.x, r });
+		q_pieceHere = m_board->getPiece(BIDX(glm::vec2((int)m_position.x, r)));
+		if (!q_pieceHere && !check4check({ (int)m_position.x, r })) moveSquares->push_back({ (int)m_position.x, r });
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back({ (int)m_position.x, r }); break; }
+		else if (!check4check({ (int)m_position.x, r })) { moveSquares->push_back({ (int)m_position.x, r }); break; }
 	}
 
 	// Down
 	for (r = (int)m_position.y - 1; r >= 0; r--) {
-		q_pieceHere = m_board->getPiece(BIDX((int)m_position.x, r));
-		if (!q_pieceHere) moveSquares->push_back({ (int)m_position.x, r });
+		q_pieceHere = m_board->getPiece(BIDX(glm::vec2((int)m_position.x, r)));
+		if (!q_pieceHere && !check4check({ (int)m_position.x, r })) moveSquares->push_back({ (int)m_position.x, r });
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back({ (int)m_position.x, r }); break; }
+		else if (!check4check({ (int)m_position.x, r })) { moveSquares->push_back({ (int)m_position.x, r }); break; }
 	}
 
-	// TODO: check for checks
-
 	return moveSquares;
+}
+
+Piece* Queen::copy(Board* newBoard) {
+	return new Queen(m_color, m_position, newBoard);
 }
 
 vec2s* Queen::legalMoves(bool calculateThreats = false) {
@@ -146,6 +168,10 @@ vec2s* Queen::legalMoves(bool calculateThreats = false) {
 	return moveSquares;
 }
 
+Piece* King::copy(Board* newBoard) {
+	return new King(m_color, m_position, newBoard);
+}
+
 vec2s* King::legalMoves(bool calculateThreats = false) {
 	vec2s kingMoves = {
 		{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
@@ -155,35 +181,39 @@ vec2s* King::legalMoves(bool calculateThreats = false) {
 	vec2s* moveSquares = new vec2s;
 	for (int i = 0; i < kingMoves.size(); i++) {
 		glm::vec2 potentialMove = m_position + kingMoves[i];
-		if (ON_BOARD(potentialMove.x) && ON_BOARD(potentialMove.y)) continue;
-		Piece* target = m_board->getPiece(BIDX(potentialMove.x, potentialMove.y));
+		if (!ON_BOARD(potentialMove.x) || !ON_BOARD(potentialMove.y)) continue;
+		Piece* target = m_board->getPiece(BIDX(potentialMove));
 		Color target_color = (target) ? target->getColor() : none;
 
 		bool inbounds = IN_RANGE(potentialMove.x, 0, 7) && IN_RANGE(potentialMove.y, 0, 7);
 		bool checkSameColor = (target_color != m_color) || calculateThreats;
-		if (inbounds && checkSameColor) {
+		if (inbounds && checkSameColor && !check4check(potentialMove)) {
 			moveSquares->push_back(potentialMove);
 		}
 	}
 
 	if (m_color == white) {
-		if (m_board->canCastle(WHITE_SHORT)) {
+		if (m_board->canCastle(WHITE_SHORT) && !check4check({ 6, 0 })) {
 			 moveSquares->push_back({ 6, 0 });
 		}
-		if (m_board->canCastle(WHITE_LONG)) {
+		if (m_board->canCastle(WHITE_LONG) && !check4check({ 2, 0 })) {
 			 moveSquares->push_back({ 2, 0 });
 		}
 	}
 	if (m_color == black) {
-		if (m_board->canCastle(BLACK_SHORT)) {
+		if (m_board->canCastle(BLACK_SHORT) && !check4check({ 6, 7 })) {
 			moveSquares->push_back({ 6, 7 });
 		}
-		if (m_board->canCastle(BLACK_LONG)) {
+		if (m_board->canCastle(BLACK_LONG) && !check4check({ 2, 7 })) {
 			moveSquares->push_back({ 2, 7 });
 		}
 	}
 
 	return moveSquares;
+}
+
+Piece* Pawn::copy(Board* newBoard) {
+	return new Pawn(m_color, m_position, newBoard);
 }
 
 vec2s* Pawn::legalMoves(bool calculateThreats = false) {
@@ -193,32 +223,34 @@ vec2s* Pawn::legalMoves(bool calculateThreats = false) {
 	int passant_rank = (m_color == white) ? 4 : 3;
 
 	// Normal move
-	int singleMoveRank = m_position.y  + m_color;
-	if (!m_board->getPiece(BIDX(m_position.x, singleMoveRank))) {
-		moveSquares->push_back({ m_position.x, singleMoveRank });
+	glm::vec2 singleMove = { m_position.x, m_position.y + m_color };
+	if (!m_board->getPiece(BIDX(singleMove)) && !check4check(singleMove)) {
+		moveSquares->push_back(singleMove);
 		// Pawn power
-		int doubleMoveRank = singleMoveRank + m_color;
-		if (m_position.y == home_rank && !m_board->getPiece(BIDX(m_position.x, doubleMoveRank))) {
-			moveSquares->push_back({ m_position.x, doubleMoveRank });
+		glm::vec2 doubleMove = singleMove + glm::vec2(0, m_color);
+		if (m_position.y == home_rank && !m_board->getPiece(BIDX(doubleMove) && !check4check(doubleMove))) {
+			moveSquares->push_back(doubleMove);
 		}
 	}
 
 	int leftFile = m_position.x - 1;
 	int rightFile = m_position.x + 1;
 	int rank = m_position.y + m_color;
-	if (leftFile != 0)	{
-		Piece* p = m_board->getPiece(BIDX(leftFile, rank));
-		if(p && p->getColor() == (m_color * -1) || calculateThreats) moveSquares->push_back({leftFile, rank});
+	if (leftFile != 0) {
+		glm::vec2 target = { leftFile, rank };
+		Piece* p = m_board->getPiece(BIDX(target));
+		if(p && p->getColor() == (m_color * -1) && !check4check(target) || calculateThreats) moveSquares->push_back(target);
 	}
 	if (rightFile != 7) {
-		Piece* p = m_board->getPiece(BIDX(rightFile, rank));
-		if(p && p->getColor() == (m_color * -1) || calculateThreats) moveSquares->push_back({rightFile, rank});
+		glm::vec2 target = glm::vec2(rightFile, rank);
+		Piece* p = m_board->getPiece(BIDX(target));
+		if(p && p->getColor() == (m_color * -1) && !check4check(target) || calculateThreats) moveSquares->push_back(target);
 	}
 
 	// En passant TODO: move up above and track en passants using square, not file
 	if (rank == passant_rank) {
 		int f = m_board->getPassantFile(m_color);
-		if (f == m_position.x - 1 || f == m_position.x + 1) moveSquares->push_back({ f, rank + getColor() });
+		if ((f == m_position.x - 1 || f == m_position.x + 1) && !check4check({f, rank + m_color})) moveSquares->push_back({f, rank + m_color});
 	}
 
 	return moveSquares;
