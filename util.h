@@ -8,8 +8,8 @@
 #include "GLFW/glfw3.h"
 #include "stb_image.h"
 
-#define ON_BOARD(v) ((0 <= (v) && (v) <= 7) ? 1 : 0)
-#define BIDX(f,r) ((r)*8+(f))
+#define ON_BOARD(s) ((0 <= (s) && (s) <= 7) ? 1 : 0)
+#define BIDX(v2) ((v2.y)*8+(v2.x))
 #define XTRC_BIT(map, bit) (((map) >> (bit)) & 1ULL)
 
 #define HORZ_LINE "|---|---|---|---|---|---|---|---|\n"
@@ -17,7 +17,7 @@
 #define WIN_TITLE "Chess AI"
 #define WIN_WIDTH  800
 #define WIN_HEIGHT 600
-#define NULL_UINT = 0xFFFFFFFF
+#define NULL_UINT 0xFFFFFFFF
 
 enum PieceType { open, pawn, knight, bishop, rook, queen, king };
 enum Color { black = -1, none, white };

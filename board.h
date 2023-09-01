@@ -2,10 +2,11 @@
 
 #include "util.h"
 #include "shader.h"
-#include "piece.h"
 #include <string>
 #include <iostream>
 
+
+class Piece;
 enum Castling {	WHITE_SHORT, WHITE_LONG, BLACK_SHORT, BLACK_LONG };
 
 
@@ -24,7 +25,6 @@ public:
 class Board { 
 	// essential data
 	Piece* board[64];
-	Piece* selected = nullptr;
 	int promoting = -1;
  	// graphical components
 	unsigned int gBoard = 0;
@@ -58,6 +58,7 @@ class Board {
 	void printBoardImage();
 	template<class T>
 	void promote();
+	void updateThreatMaps();
 public:
 	Board(GLuint); // Creates new starting board
 	Board(Board*); // Copies board state
@@ -67,8 +68,14 @@ public:
 	Color whoseTurn() { return whose_turn; }
 	Piece* getPiece(int s) { return board[s]; }
 	bool isHolding() { return (held != nullptr); }
+	int getPassantFile(Color);
 	void render();
+	void makeUserMove(std::string);
+	void makeLegalMove(Piece*, glm::vec2);
+	bool hasLegalMove(Color);
+	bool isInCheck(Color);
 
 	void grab(Piece*);
+	bool move(Piece*, glm::vec2);
 	Piece* drop();
 };
