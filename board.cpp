@@ -628,6 +628,7 @@ Piece* Board::drop() {
 }
 
 bool Board::move(Piece* piece, glm::vec2 square) {
+	if (!piece) return false;
 	// Clear old spot
 	glm::vec2 origin = piece->getPosition();
 	board[(int)BIDX(glm::vec2(origin.x, origin.y))] = nullptr;

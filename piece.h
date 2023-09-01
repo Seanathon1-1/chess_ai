@@ -67,9 +67,11 @@ public:
 };
 
 class Pawn : public Piece {
+	bool m_canDoubleMove = true;
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
 	vec2s* legalMoves(bool) override;
+	void losePower() { m_canDoubleMove = false; }
 	char textboardSymbol() override { return 'P'; }
 };

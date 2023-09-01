@@ -9,13 +9,10 @@ Piece::Piece(Color c, glm::vec2 square, Board* b) {
 	m_selected = false;
 }
 
-Piece* Piece::copy(Board* newBoard) {
-	return new Knight(m_color, m_position, newBoard);
-}
-
 bool Piece::check4check(glm::vec2 move) {
 	Board* testingMove = new Board(m_board);
-	testingMove->move(this, move);
+	Piece* testingPiece = testingMove->getPiece(BIDX(m_position));
+	testingMove->move(testingPiece, move);
 	bool inCheck = testingMove->isInCheck(m_color);
 	delete testingMove;
 	return inCheck;
@@ -219,7 +216,6 @@ Piece* Pawn::copy(Board* newBoard) {
 vec2s* Pawn::legalMoves(bool calculateThreats = false) {
 	vec2s* moveSquares = new vec2s;
 
-	int home_rank = (m_color == white) ? 1 : 6;
 	int passant_rank = (m_color == white) ? 4 : 3;
 
 	// Normal move
@@ -228,7 +224,8 @@ vec2s* Pawn::legalMoves(bool calculateThreats = false) {
 		moveSquares->push_back(singleMove);
 		// Pawn power
 		glm::vec2 doubleMove = singleMove + glm::vec2(0, m_color);
-		if (m_position.y == home_rank && !m_board->getPiece(BIDX(doubleMove) && !check4check(doubleMove))) {
+		Piece* destinationOccupant = m_board->getPiece(BIDX(doubleMove));
+		if (m_canDoubleMove && !destinationOccupant && !check4check(doubleMove)) {
 			moveSquares->push_back(doubleMove);
 		}
 	}
@@ -238,7 +235,7 @@ vec2s* Pawn::legalMoves(bool calculateThreats = false) {
 	int rank = m_position.y + m_color;
 	if (leftFile != 0) {
 		glm::vec2 target = { leftFile, rank };
-		Piece* p = m_board->getPiece(BIDX(target));
+ 		Piece* p = m_board->getPiece(BIDX(target));
 		if(p && p->getColor() == (m_color * -1) && !check4check(target) || calculateThreats) moveSquares->push_back(target);
 	}
 	if (rightFile != 7) {
