@@ -64,9 +64,7 @@ void Game::render() {
 			vec2s* legals = movedPiece->legalMoves(false);
 			glm::vec2 attempt = { file,rank };
 			if (std::find(legals->begin(), legals->end(), attempt) != legals->end()) {
-				// TODO: move the piece
 				board->makeLegalMove(movedPiece, attempt);
-				if (instanceof<Pawn>(movedPiece)) ((Pawn*)movedPiece)->losePower();
 			}
 			delete legals;
 		}

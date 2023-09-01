@@ -245,9 +245,9 @@ vec2s* Pawn::legalMoves(bool calculateThreats = false) {
 	}
 
 	// En passant TODO: move up above and track en passants using square, not file
-	if (rank == passant_rank) {
+	if (m_position.y == passant_rank) {
 		int f = m_board->getPassantFile(m_color);
-		if ((f == m_position.x - 1 || f == m_position.x + 1) && !check4check({f, rank + m_color})) moveSquares->push_back({f, rank + m_color});
+		if ((f == m_position.x - 1 || f == m_position.x + 1) && !check4check({f, rank})) moveSquares->push_back({f, rank});
 	}
 
 	return moveSquares;

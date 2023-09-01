@@ -553,7 +553,9 @@ void Board::makeUserMove(std::string move) {
 *              en passant opportunities, whose turn, etc.
 \*-------------------------------------------------------------------------------------------------------------*/
 void Board::makeLegalMove(Piece* p, glm::vec2 target) {
+	
 	glm::vec2 src = p->getPosition();
+	bool updatePassant = false;
 
 	// Enforce castling restrictions
 	if (instanceof<King>(p)) {
@@ -576,8 +578,22 @@ void Board::makeLegalMove(Piece* p, glm::vec2 target) {
 			if (src.x == 7 && src.y == 7) black_short_castle = 0;
 			if (src.x == 0 && src.y == 7) black_long_castle = 0;
 		}
-	} else if (instanceof<Pawn>(p)) {
-		// Check if en passant is available for next move
+	}
+	else if (instanceof<Pawn>(p)) {
+		updatePassant = true;
+		((Pawn*)p)->losePower();
+		glm::vec2 enPassantCaptureSquare = (p->getColor() == white) ? glm::vec2(black_en_passant, 5) : glm::vec2(white_en_passant, 2);
+		if (target == enPassantCaptureSquare) {
+			glm::vec2 capturedPawn = enPassantCaptureSquare - glm::vec2(0, p->getColor());
+			board[(int)BIDX(capturedPawn)] = nullptr;
+		}
+	}
+
+	white_en_passant = -1;
+	black_en_passant = -1;
+	
+	// Check if en passant is available for next move
+	if (updatePassant) {
 		int dist = abs(target.y - src.y);
 		int pawn_file = src.x;
 		if (dist == 2) (p->getColor() == white) ? white_en_passant = pawn_file : black_en_passant = pawn_file;
@@ -589,10 +605,6 @@ void Board::makeLegalMove(Piece* p, glm::vec2 target) {
 	updateThreatMaps();
 	black_check = XTRC_BIT(white_threat_map, black_king);
 	white_check = XTRC_BIT(black_threat_map, white_king);
-
-	white_en_passant = -1;
-	black_en_passant = -1;
-
 
 	// Other player's turn
 	if (whose_turn == white) whose_turn = black;
