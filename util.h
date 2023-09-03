@@ -8,8 +8,7 @@
 #include "GLFW/glfw3.h"
 #include "stb_image.h"
 
-#define ON_BOARD(v) ((0 <= (v) && (v) <= 7) ? 1 : 0)
-#define BIDX(f,r) ((r)*8+(f))
+#define ON_BOARD(s) ((0 <= (s) && (s) <= 7) ? 1 : 0)
 #define XTRC_BIT(map, bit) (((map) >> (bit)) & 1ULL)
 
 #define HORZ_LINE "|---|---|---|---|---|---|---|---|\n"
@@ -29,7 +28,7 @@ inline bool instanceof(const T* ptr) {
 	return dynamic_cast<const Base*>(ptr) != nullptr;
 }
 
-typedef std::vector<glm::vec2> vec2s;
+typedef std::vector<glm::ivec2> vec2s;
 typedef std::vector<glm::vec3> vec3s;
 typedef std::vector<glm::vec4> vec4s;
 typedef std::vector<unsigned int> uints;

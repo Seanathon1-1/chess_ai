@@ -6,10 +6,12 @@
 #include <string>
 #include <iostream>
 
+
+class Piece;
 enum Castling {	WHITE_SHORT, WHITE_LONG, BLACK_SHORT, BLACK_LONG };
 
 
-struct Square {
+class Square {
 	glm::vec3 top_left_corner;
 	bool is_dark;
 	Piece* piece;
@@ -24,7 +26,6 @@ public:
 class Board { 
 	// essential data
 	Piece* board[64];
-	Piece* selected = nullptr;
 	int promoting = -1;
  	// graphical components
 	unsigned int gBoard = 0;
@@ -36,8 +37,8 @@ class Board {
 	bool white_check = 0;
 	bool black_check = 0;
 	// Where are the kings
-	int white_king;
-	int black_king;
+	glm::ivec2 white_king;
+	glm::ivec2 black_king; 
 	Color whose_turn = none;
 	uint64_t white_threat_map = 0ULL;
 	uint64_t black_threat_map = 0ULL;
@@ -56,8 +57,12 @@ class Board {
 
 	std::string printBoardString();
 	void printBoardImage();
-	template<class T>
-	void promote();
+	template<class T>void promote();
+	void updateThreatMaps();
+	void placePiece(Piece*, int, int);
+	void placePiece(Piece*, glm::ivec2);
+	void clearSquare(int, int);
+	void clearSquare(glm::ivec2);
 public:
 	Board(GLuint); // Creates new starting board
 	Board(Board*); // Copies board state
@@ -65,10 +70,16 @@ public:
 	bool makeMove(Piece*, int, int);
 	bool canCastle(Castling);
 	Color whoseTurn() { return whose_turn; }
-	Piece* getPiece(int s) { return board[s]; }
+	Piece* getPiece(int f, int r) { return board[r * 8 + f]; }
+	Piece* getPiece(glm::ivec2 s) { return board[s.y * 8 + s.x]; }
 	bool isHolding() { return (held != nullptr); }
 	void render();
+	void makeUserMove(std::string);
+	void makeLegalMove(Piece*, glm::ivec2);
+	bool hasLegalMove(Color);
+	bool isInCheck(Color);
 
 	void grab(Piece*);
+	bool move(Piece*, glm::ivec2);
 	Piece* drop();
 };
