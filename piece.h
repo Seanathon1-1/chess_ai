@@ -1,4 +1,5 @@
 #pragma once
+
 #include "util.h"
 #include "board.h"
 

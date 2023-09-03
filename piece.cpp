@@ -57,7 +57,7 @@ vec2s* Bishop::legalMoves(bool calculateThreats = false) {
 	vec2s* moveSquares = new vec2s;
 	// We assume north to be in the positive rank direction (ie towards rank 8)
 	// NW
-	f = m_position.x - 1; r = m_position.y + 1;
+	f = (int)m_position.x - 1; r = (int)m_position.y + 1;
 	while (f >= 0 && r < 8) {
 		q_pieceHere = m_board->getPiece(glm::ivec2(f, r));
 		if (!q_pieceHere && !check4check({f, r})) moveSquares->push_back({f, r});
@@ -67,7 +67,7 @@ vec2s* Bishop::legalMoves(bool calculateThreats = false) {
 	}
 
 	// NE
-	f = m_position.x + 1; r = m_position.y + 1;
+	f = (int)m_position.x + 1; r = (int)m_position.y + 1;
 	while (f < 8 && r < 8) {
 		q_pieceHere = m_board->getPiece(glm::ivec2(f, r));
 		if (!q_pieceHere && !check4check({ f, r })) moveSquares->push_back({f, r});
@@ -77,7 +77,7 @@ vec2s* Bishop::legalMoves(bool calculateThreats = false) {
 	}
 
 	// SW
-	f = m_position.x - 1; r = m_position.y - 1;
+	f = (int)m_position.x - 1; r = (int)m_position.y - 1;
 	while (f >= 0 && r >= 0) {
 		q_pieceHere = m_board->getPiece(glm::ivec2(f, r));
 		if (!q_pieceHere && !check4check({ f, r })) moveSquares->push_back({f, r});
@@ -87,7 +87,7 @@ vec2s* Bishop::legalMoves(bool calculateThreats = false) {
 	}
 
 	// SE
-	f = m_position.x + 1; r = m_position.y - 1;
+	f = (int)m_position.x + 1; r = (int)m_position.y - 1;
 	while (f < 8 && r >= 0) {
 		q_pieceHere = m_board->getPiece(glm::ivec2(f, r));
 		if (!q_pieceHere && !check4check({ f, r })) moveSquares->push_back({f, r});
@@ -165,13 +165,17 @@ vec2s* Queen::legalMoves(bool calculateThreats = false) {
 	return moveSquares;
 }
 
-std::vector<glm::vec2>& King::legalMoves(bool calculateThreats = false) {
-	std::vector<glm::vec2> kingMoves = {
+Piece* King::copy(Board* newBoard) {
+	return new King(m_color, m_position, newBoard);
+}
+
+vec2s* King::legalMoves(bool calculateThreats = false) {
+	vec2s kingMoves = {
 		{-1, -1}, {-1, 0}, {-1, 1}, {0, -1},
 		 {1, -1},  {1, 0},  {1, 1},  {0, 1}
 	};
 
-	std::vector<glm::vec2> moveSquares;
+	vec2s* moveSquares = new vec2s;
 	for (int i = 0; i < kingMoves.size(); i++) {
 		glm::ivec2 potentialMove = m_position + kingMoves[i];
 		if (!ON_BOARD(potentialMove.x) || !ON_BOARD(potentialMove.y)) continue;

@@ -13,9 +13,6 @@
 
 using namespace std;
 
-void handleMouseButtonEvent(GLFWwindow* window, int button, int action, int mods) {
-    
-}
 
 int main() {
     // Initialize GLFW.
@@ -37,8 +34,6 @@ int main() {
     // Make the context of the window.
     glfwMakeContextCurrent(window);
 
-    // Callbacks
-    glfwSetMouseButtonCallback(window, handleMouseButtonEvent);
     
     // Initialize GLEW.
     if (glewInit())
@@ -71,11 +66,6 @@ int main() {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-
-        // ImGUI components
-        ImGui::Begin("Hello world!");
-        ImGui::Text("Hey window!");
-        ImGui::End();
 
         // Clear the screen and render our game
         glClearColor(0.1f, 0.1f, 0.1f, 0.1f);

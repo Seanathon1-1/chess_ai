@@ -2,7 +2,6 @@
 
 #include "util.h"
 #include "shader.h"
-#include "piece.h"
 #include <string>
 #include <iostream>
 
@@ -73,6 +72,7 @@ public:
 	Piece* getPiece(int f, int r) { return board[r * 8 + f]; }
 	Piece* getPiece(glm::ivec2 s) { return board[s.y * 8 + s.x]; }
 	bool isHolding() { return (held != nullptr); }
+	int getPassantFile(Color);
 	void render();
 	void makeUserMove(std::string);
 	void makeLegalMove(Piece*, glm::ivec2);

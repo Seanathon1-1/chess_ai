@@ -404,6 +404,7 @@ void Board::render() {
 }
 
 bool Board::canCastle(Castling whichCastle) {
+	bool transit_check;
 	switch (whichCastle) {
 	case WHITE_SHORT:
 		transit_check = XTRC_BIT(black_threat_map, white_king.y * 8 + white_king.x + 1);
