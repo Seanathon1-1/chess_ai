@@ -366,3 +366,5 @@ FodyWeavers.xsd
 .claudiaideconfig
 
 chess_project_notes/
+
+*.code-workspace
