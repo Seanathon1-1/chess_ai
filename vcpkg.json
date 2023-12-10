@@ -4,7 +4,11 @@
   "dependencies": [
     {
       "name": "imgui",
-      "features": [ "glfw-binding", "opengl3-binding", "docking-experimental" ]
+      "features": [
+        "glfw-binding",
+        "opengl3-binding",
+        "docking-experimental"
+      ]
     },
     "glew",
     "glfw3",
