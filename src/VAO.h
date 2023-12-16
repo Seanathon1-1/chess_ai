@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include "VBO.h"
 
 // Wrapper class for opengl Vertex Array Objects

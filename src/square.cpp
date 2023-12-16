@@ -117,7 +117,7 @@ void Square::drawTexture(Shader* shader) {
 		TCHAR buffer[MAX_PATH] = { 0 };
 		GetModuleFileName(NULL, buffer, MAX_PATH);
 		std::cerr << "Fail!: " << texture_path << "\n";
-		std::cerr << "Working Directory: " << std::string(buffer) << std::endl;
+		std::cerr << "Working Directory: " << buffer << std::endl;
 	}
 	stbi_image_free(data);
 
