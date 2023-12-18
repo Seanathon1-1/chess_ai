@@ -6,18 +6,15 @@ project "ChessAI"
 
 	kind "ConsoleApp"
 	language "C++"
-	targetdir "out/%{cfg.buildcfg}"
+
+	outputdir = "out/%cfg.{buildcfg}"
+
+	targetdir (outputdir)
 
 	files {
 		"src/**.h",
 		"src/**.cpp",
-		"premake5.lua",
-		"lib/glm/glm/**.hpp",
-		"lib/glm/glm/**.inl",
-		"lib/imgui/*.h",
-		"lib/imgui/*.cpp",
-		"lib/imgui/backends/imgui_impl_opengl3.*",
-		"lib/imgui/backends/imgui_impl_glfw.*"
+		"premake5.lua"
 	}
 
 
@@ -29,7 +26,11 @@ project "ChessAI"
 		"lib/glfw/include"
 	}
 
-	links {"opengl32"}
+	include "lib/imgui"
+	include "lib/GLEW"
+	include "lib/GLFW"
+
+	links {"opengl32", "ImGui", "GLFW", "GLEW"}
 
 	
 
