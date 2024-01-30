@@ -8,7 +8,7 @@ project "ChessAI"
 	language "C++"
 
 	outputdir = "out/%cfg.{buildcfg}"
-
+	
 	targetdir (outputdir)
 
 	files {
@@ -17,6 +17,7 @@ project "ChessAI"
 		"premake5.lua"
 	}
 
+	defines { "GLEW_STATIC" }
 
 	includedirs {
 		"lib/imgui",
@@ -27,10 +28,8 @@ project "ChessAI"
 	}
 
 	include "lib/imgui"
-	include "lib/GLEW"
-	include "lib/GLFW"
 
-	links {"opengl32", "ImGui", "GLFW", "GLEW"}
+	links {"opengl32.lib", "ImGui", "GLFW"}
 
 	
 
