@@ -28,8 +28,9 @@ project "ChessAI"
 	}
 
 	include "lib/imgui"
+	include "lib/glfw"
 
-	links {"opengl32.lib", "ImGui", "GLFW"}
+	links {"opengl32.lib", "ImGui", "GLFW", "glew32"}
 
 	
 
@@ -45,10 +46,8 @@ project "ChessAI"
 	  system "Windows"
 	  architecture "x86"
 	  libdirs { "lib/glew/lib/Release/Win32" }
-	  links {"glew32.lib"}
 
 	filter "platforms:Win64"
 	  system "Windows"
 	  architecture "x86_64"
 	  libdirs { "lib/glew/lib/Release/x64" }
-	  links {"glew32.lib"}
