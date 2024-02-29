@@ -372,3 +372,7 @@ chess_project_notes/
 
 *.vcxproj*
 *.sln
+
+Debug-*/
+bin-int/
+imgui.ini
