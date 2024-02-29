@@ -76,8 +76,8 @@ Board::Board(GLuint fbo) : fbo(fbo) {
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	colorShader = new Shader("../../../res/shaders/default.vert", "../../../res/shaders/default.frag");
-	pieceShader = new Shader("../../../res/shaders/piece.vert", "../../../res/shaders/piece.frag");
+	colorShader = new Shader("res/shaders/default.vert", "res/shaders/default.frag");
+	pieceShader = new Shader("res/shaders/piece.vert", "res/shaders/piece.frag");
 
 	whose_turn = white;
 	white_king = { 4, 0 };

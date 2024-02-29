@@ -104,7 +104,7 @@ void Square::drawTexture(Shader* shader) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Get texture from file through stb image
-	std::string texture_path = "../../../res/textures/";
+	std::string texture_path = "res/textures/";
 	texture_path.append((piece->getColor() == black) ? "black_" : "white_");
 	texture_path += piece->textboardSymbol();
 	texture_path.append(".png");
