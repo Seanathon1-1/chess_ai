@@ -5,3 +5,6 @@
 	url = https://github.com/Seanathon1-1/imgui
 	path = lib/imgui
 	branch = docking
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = https://github.com/Seanathon1-1/glfw.git

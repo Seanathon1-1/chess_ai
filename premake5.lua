@@ -17,7 +17,6 @@ project "ChessAI"
 		"premake5.lua"
 	}
 
-	defines { "GLEW_STATIC" }
 
 	includedirs {
 		"lib/imgui",
