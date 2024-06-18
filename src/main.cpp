@@ -68,7 +68,7 @@ int main() {
         ImGui::NewFrame();
 
         // Clear the screen and render our game
-        glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+        glClearColor(0.f, 0.f, 0.f, 1.f);
         game.render();
 
         // Render imgui into screen

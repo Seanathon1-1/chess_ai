@@ -7,6 +7,15 @@ Piece::Piece(Color c, glm::ivec2 square, Board* b) {
 	m_position = square;
 	m_board    = b;
 	m_selected = false;
+	m_texture  = 0;
+}
+
+Piece::~Piece() {
+	if (m_texture) delete m_texture;
+}
+
+void Piece::createTexture() {
+	m_texture = new Texture(this);
 }
 
 bool Piece::check4check(glm::ivec2 move) {
@@ -233,12 +242,13 @@ vec2s* Pawn::legalMoves(bool calculateThreats = false) {
 	int leftFile = m_position.x - 1;
 	int rightFile = m_position.x + 1;
 	int rank = m_position.y + m_color;
-	if (leftFile != 0) {
+	uint8_t promotionRank = (m_color == black) ? 0 : 7;
+	if (leftFile != -1 && m_position.y != promotionRank) {
 		glm::ivec2 target = { leftFile, rank };
  		Piece* p = m_board->getPiece(target);
 		if(p && p->getColor() == (m_color * -1) && !check4check(target) || calculateThreats) moveSquares->push_back(target);
 	}
-	if (rightFile != 7) {
+	if (rightFile != 8 && m_position.y != promotionRank) {
 		glm::ivec2 target = glm::ivec2(rightFile, rank);
 		Piece* p = m_board->getPiece((target));
 		if(p && p->getColor() == (m_color * -1) && !check4check(target) || calculateThreats) moveSquares->push_back(target);

@@ -7,10 +7,23 @@
 
 
 class Piece;
+class Game;
+class Board;
 enum Castling {	WHITE_SHORT, WHITE_LONG, BLACK_SHORT, BLACK_LONG };
+
+
+template <class T>
+T* createPiece(Color color, glm::ivec2 position, Board* board) {
+	T* newPiece = new T(color, position, board);
+	newPiece->createTexture();
+	return newPiece;
+}
+
+
 
 class Board { 
 	// essential data
+	Game* game = 0;
 	Piece* board[64];
 	int promoting = -1;
  	// graphical components
@@ -43,14 +56,13 @@ class Board {
 
 	std::string printBoardString();
 	void printBoardImage();
-	template<class T>void promote();
 	void updateThreatMaps();
 	void placePiece(Piece*, int, int);
 	void placePiece(Piece*, glm::ivec2);
 	void clearSquare(int, int);
 	void clearSquare(glm::ivec2);
 public:
-	Board(GLuint); // Creates new starting board
+	Board(GLuint, Game*); // Creates new starting board
 	Board(Board*); // Copies board state
 	~Board();
 	bool makeMove(Piece*, int, int);
@@ -59,6 +71,7 @@ public:
 	Piece* getPiece(int f, int r) { return board[r * 8 + f]; }
 	Piece* getPiece(glm::ivec2 s) { return board[s.y * 8 + s.x]; }
 	bool isHolding() { return (held != nullptr); }
+	bool isWaitingOnPromotion() { return wait_for_promote; }
 	int getPassantFile(Color);
 	void render();
 	void makeUserMove(std::string);
@@ -69,4 +82,29 @@ public:
 	void grab(Piece*);
 	bool move(Piece*, glm::ivec2);
 	Piece* drop();
+
+
+	template<class T>
+	void promote() {
+		if (promoting == -1) {
+			std::cerr << "No piece able to promote!";
+			return;
+		}
+		/*if (T != Queen && T != Rook && T != Bishop && T != Knight) {
+			std::cerr << "Invalid promotion type!";
+			return;
+		}*/
+
+		Pawn* toDelete = (Pawn*)board[promoting];
+		board[promoting] = createPiece<T>(toDelete->getColor(), toDelete->getPosition(), this);
+		promoting = -1;
+		wait_for_promote = false;
+		delete toDelete;
+		game->deletePromotionTextures();
+
+		if (whose_turn == white) whose_turn = black;
+		else whose_turn = white;
+	}
+
+
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 // Wrapper class for opengl Element Buffer Objects
 class EBO {

@@ -1,5 +1,6 @@
 #include "board.h"
 #include "piece.h"
+#include "game.h"
 #include "imgui.h"
 #include "gl/glew.h"
 #include <cctype>
@@ -12,45 +13,47 @@
 
 const char piece_chars[7] = { ' ', 'P', 'N', 'B', 'R', 'Q', 'K' };
 
+
+
 /*-------------------------------------------------------------------------------------------------------------*\
 * Board::Board(GLuint)
 * 
 * Parameters: fbo - ID of the FrameBuffer Object that the board will be drawn onto
 * Description: Creates a new Board with the classical starting position
 \*-------------------------------------------------------------------------------------------------------------*/
-Board::Board(GLuint fbo) : fbo(fbo) {
+Board::Board(GLuint fbo, Game* game) : fbo(fbo), game(game) {
  	memset(&board, 0, sizeof(Piece*) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
-		board[8 + file]  = new Pawn(white, { file, 1 }, this);
-		board[48 + file] = new Pawn(black, { file, 6 }, this);
+		board[8 + file]  = createPiece<Pawn>(white, { file, 1 }, this);
+		board[48 + file] = createPiece<Pawn>(black, { file, 6 }, this);
 	}
 
 	// Rooks
-	board[ 0] = new Rook(white, { 0,0 }, this);
-	board[ 7] = new Rook(white, { 7,0 }, this);
-	board[56] = new Rook(black, { 0,7 }, this);
-	board[63] = new Rook(black, { 7,7 }, this);
+	board[ 0] = createPiece<Rook>(white, { 0,0 }, this);
+	board[ 7] = createPiece<Rook>(white, { 7,0 }, this);
+	board[56] = createPiece<Rook>(black, { 0,7 }, this);
+	board[63] = createPiece<Rook>(black, { 7,7 }, this);
 
 	// Knights
-	board[ 1] = new Knight(white, { 1,0 }, this);
-	board[ 6] = new Knight(white, { 6,0 }, this);
-	board[57] = new Knight(black, { 1,7 }, this);
-	board[62] = new Knight(black, { 6,7 }, this);
+	board[ 1] = createPiece<Knight>(white, { 1,0 }, this);
+	board[ 6] = createPiece<Knight>(white, { 6,0 }, this);
+	board[57] = createPiece<Knight>(black, { 1,7 }, this);
+	board[62] = createPiece<Knight>(black, { 6,7 }, this);
 
 	// Bishop
-	board[ 2] = new Bishop(white, { 2,0 }, this);
-	board[ 5] = new Bishop(white, { 5,0 }, this);
-	board[58] = new Bishop(black, { 2,7 }, this);
-	board[61] = new Bishop(black, { 5,7 }, this);
+	board[ 2] = createPiece<Bishop>(white, { 2,0 }, this);
+	board[ 5] = createPiece<Bishop>(white, { 5,0 }, this);
+	board[58] = createPiece<Bishop>(black, { 2,7 }, this);
+	board[61] = createPiece<Bishop>(black, { 5,7 }, this);
 
 	// Queens
-	board[ 3] = new Queen(white, { 3,0 }, this);
-	board[59] = new Queen(black, { 3,7 }, this);
+	board[ 3] = createPiece<Queen>(white, { 3,0 }, this);
+	board[59] = createPiece<Queen>(black, { 3,7 }, this);
 
 	// Kings
-	board[ 4] = new King(white, { 4,0 }, this);
-	board[60] = new King(black, { 4,7 }, this);
+	board[ 4] = createPiece<King>(white, { 4,0 }, this);
+	board[60] = createPiece<King>(black, { 4,7 }, this);
 
 	glGenTextures(1, &gBoard);
 	glBindTexture(GL_TEXTURE_2D, gBoard);
@@ -156,28 +159,6 @@ bool Board::makeMove(Piece* p, int s, int d) {
 	return false;
 }
 
-/*-------------------------------------------------------------------------------------------------------------*\
-* Board::promote(PieceType)
-* 
-* Parameters: type - Kind of piece the pawn is promoting to
-* Description: Handles pawn promotion
-\*-------------------------------------------------------------------------------------------------------------*/
-template<class T>
-void Board::promote() {
-	if (promoting == -1) {
-		std::cerr << "No piece able to promote!";
-		return;
-	}
-	if (T != Queen && T != Rook && T != Bishop && T != Knight) {
-		std::cerr << "Invalid promotion type!";
-		return;
-	}
-
-	Pawn* toDelete = (Pawn*)board[promoting];
-	board[promoting] = new T(toDelete->getColor(), toDelete->getPosition(), this);
-	promoting = -1;
-	delete toDelete;
-}
 
 /*-------------------------------------------------------------------------------------------------------------*\
 * Board::printBoard(std::string&)
@@ -212,7 +193,7 @@ std::string Board::printBoardString() {
 void Board::printBoardImage() {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.1f, 0.1f, 0.1f, 0.1f);
+	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
@@ -242,7 +223,7 @@ void Board::printBoardImage() {
 		}
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
-		glClearColor(0.3f, 0.1f, 0.3f, 0.1f);
+		glClearColor(0.f, 0.f, 0.f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		ImGui::Image((void*)(intptr_t)gBoard, ImGui::GetContentRegionAvail());
@@ -457,13 +438,18 @@ void Board::makeLegalMove(Piece* p, glm::ivec2 target) {
 		int pawn_file = src.x;
 		if (dist == 2) (p->getColor() == white) ? white_en_passant = pawn_file : black_en_passant = pawn_file;
 	}
-
+	 
 	wait_for_promote |= move(p, target);
 
 	// Look for check
 	updateThreatMaps();
 	black_check = XTRC_BIT(white_threat_map, (black_king.y * 8 + black_king.x));
 	white_check = XTRC_BIT(black_threat_map, (white_king.y * 8 + white_king.x));
+
+	if (wait_for_promote) {
+		game->createPromotionTextures();
+		return;
+	}
 
 	// Other player's turn
 	if (whose_turn == white) whose_turn = black;
@@ -552,7 +538,7 @@ bool Board::move(Piece* piece, glm::ivec2 square) {
 	// Check for promotion
 	int promotion_sqr = (piece->getColor() == white) ? 7 : 0;
 	if (instanceof<Pawn>(piece) && (square.y == promotion_sqr)) {
-		promoting = square.x;
+		promoting = square.y * 8 + square.x;
 		return 1;
 	}
 	return 0;

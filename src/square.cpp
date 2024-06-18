@@ -1,8 +1,8 @@
 #include "square.h"
 #include "VBO.h"
 #include "VAO.h"
+#include "Texture.h"
 #include "EBO.h"
-#include <Windows.h>
 
 
 // Colors for the squares of the boardsquare
@@ -93,40 +93,13 @@ void Square::drawTexture(Shader* shader) {
 	vertex_array->linkAttribute(vertex_buffer, 0, 3, GL_FLOAT, 5 * sizeof(float), (void*)0);
 	vertex_array->linkAttribute(vertex_buffer, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
-	// setup opengl texture object 
-	int width, height, nChannels;
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// Get texture from file through stb image
-	std::string texture_path = "res/textures/";
-	texture_path.append((piece->getColor() == black) ? "black_" : "white_");
-	texture_path += piece->textboardSymbol();
-	texture_path.append(".png");
-	unsigned char* data = stbi_load(texture_path.c_str(), &width, &height, &nChannels, 0);
-	if (data) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else {
-		TCHAR buffer[MAX_PATH] = { 0 };
-		GetModuleFileName(NULL, buffer, MAX_PATH);
-		std::cerr << "Fail!: " << texture_path << "\n";
-		std::cerr << "Working Directory: " << buffer << std::endl;
-	}
-	stbi_image_free(data);
 
 
 	// Draw the piece
 	shader->activate();
 	glEnable(GL_BLEND);
 	glUniform1i(glGetUniformLocation(shader->ID, "ourTexture"), 0);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glBindTexture(GL_TEXTURE_2D, piece->getTexture());
 	vertex_array->bind();
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
@@ -137,7 +110,6 @@ void Square::drawTexture(Shader* shader) {
 	vertex_array->unbind();
 	vertex_buffer->unbind();
 	element_buffer->unbind();
-	glDeleteTextures(1, &texture);
 	delete vertex_array;
 	delete vertex_buffer;
 	delete element_buffer;

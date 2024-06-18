@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include <stdint.h>
@@ -11,7 +11,7 @@
 #define ON_BOARD(s) ((0 <= (s) && (s) <= 7) ? 1 : 0)
 #define XTRC_BIT(map, bit) (((map) >> (bit)) & 1ULL)
 
-#define HORZ_LINE "|---|---|---|---|---|---|---|---|\n"
+#define HORZ_LINE	"|---|---|---|---|---|---|---|---|\n"
 
 #define WIN_TITLE "Chess AI"
 #define WIN_WIDTH  800
@@ -32,4 +32,3 @@ typedef std::vector<glm::ivec2> vec2s;
 typedef std::vector<glm::vec3> vec3s;
 typedef std::vector<glm::vec4> vec4s;
 typedef std::vector<unsigned int> uints;
-

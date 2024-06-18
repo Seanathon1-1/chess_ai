@@ -1,13 +1,13 @@
 workspace "ChessAI"
 	configurations { "Debug", "Release" }
-	platforms { "Win32", "Win64" }
+	platforms { "Win32", "x64" }
 
 project "ChessAI"
 
 	kind "ConsoleApp"
 	language "C++"
 
-	outputdir = "out/%cfg.{buildcfg}"
+	outputdir = "out/%{cfg.buildcfg}"
 	
 	targetdir (outputdir)
 
@@ -19,34 +19,40 @@ project "ChessAI"
 
 
 	includedirs {
-		"lib/imgui",
-		"lib/imgui/backends",
+		"lib/ImGui",
+		"lib/ImGui/backends",
 		"lib/glm",
 		"lib/glew/include",
 		"lib/glfw/include"
 	}
 
-	include "lib/imgui"
-	include "lib/glfw"
+	links { "opengl32", "ImGui", "GLFW", "glew32s" }
 
-	links {"opengl32.lib", "ImGui", "GLFW", "glew32"}
-
-	
+	defines { "GLEW_STATIC" }
 
 	filter "configurations:Debug"
-      defines { "DEBUG" }
-      symbols "On"
+		defines { "DEBUG" }
+		symbols "On"
 
     filter "configurations:Release"
-      defines { "NDEBUG" }
-      optimize "On"
+		defines { "NDEBUG" }
+		optimize "On"
 
 	filter "platforms:Win32"
-	  system "Windows"
-	  architecture "x86"
-	  libdirs { "lib/glew/lib/Release/Win32" }
+		system "Windows"
+		architecture "x86"
+
 
 	filter "platforms:Win64"
-	  system "Windows"
-	  architecture "x86_64"
-	  libdirs { "lib/glew/lib/Release/x64" }
+		system "Windows"
+		architecture "x86_64"
+
+	filter "architecture:x86"
+		libdirs { "lib/glew/lib/Release/Win32" }
+
+	filter "architecture:x64"
+		libdirs { "lib/glew/lib/Release/x64" }
+	filter { }
+
+	include "lib/ImGui/Build_ImGui.lua"
+	include "lib/glfw"

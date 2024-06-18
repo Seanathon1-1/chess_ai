@@ -1,9 +1,10 @@
 #include "game.h"
 #include "piece.h"
 #include "imgui.h"
+#include "Texture.h"
 
 Game::Game(unsigned int fbo = 0) {
-	board = new Board(fbo);
+	board = new Board(fbo, this);
 }
 
 Game::Game(Game* base) {
@@ -14,19 +15,19 @@ Game::~Game() {
 	delete board;
 }
 
+void Game::createPromotionTextures() {
+	queenPromotion = new Texture(&Queen(board->whoseTurn(), { 0, 0 }, 0));
+	rookPromotion = new Texture(&Rook(board->whoseTurn(), { 0, 0 }, 0));
+	knightPromotion = new Texture(&Knight(board->whoseTurn(), { 0, 0 }, 0));
+	bishopPromotion = new Texture(&Bishop(board->whoseTurn(), { 0, 0 }, 0));
+}
 
-/*-------------------------------------------------------------------------------------------------------------*\
-* Game::pawnSights(std::vector<int>*, int, int, Color, bool?)
-* 
-* Parameters: moves - Pointer to vector where legal moves will be appended
-*             p - Which piece we are checking the moves for
-*             file - File where the piece is located (numbered 0-7)
-*             rank - Rank where the piece is located (numbered 0-7)
-*             threat - Optional, defaults to false. Are we checking threat maps or not?
-* Description: Looks at the possible moves for a pawn and appends them to 'moves'
-\*-------------------------------------------------------------------------------------------------------------*/
-
-
+void Game::deletePromotionTextures() {
+	delete queenPromotion;
+	delete rookPromotion;
+	delete knightPromotion;
+	delete bishopPromotion;
+}
 
 /*-------------------------------------------------------------------------------------------------------------*\
 * Game::render()
@@ -40,6 +41,29 @@ void Game::render() {
 
 	ImGui::Begin("Gameview");
 	ImGuiIO& io = ImGui::GetIO();
+
+	if (board->isWaitingOnPromotion()) {
+		ImGui::Begin("Promotion Selection", 0, ImGuiWindowFlags_NoTitleBar);
+
+		if (ImGui::ImageButton("Queen", queenPromotion->getTextureData(), ImVec2(70, 70))) {
+			board->promote<Queen>();
+		}
+		ImGui::SameLine();
+		if (ImGui::ImageButton("Rook", rookPromotion->getTextureData(), ImVec2(70, 70))) {
+			board->promote<Rook>();
+		}
+
+		if (ImGui::ImageButton("Knight", knightPromotion->getTextureData(), ImVec2(70, 70))) {
+			board->promote<Knight>();
+		}
+		ImGui::SameLine();
+		if (ImGui::ImageButton("Bishop", bishopPromotion->getTextureData(), ImVec2(70, 70))) {
+			board->promote<Bishop>();
+		}
+
+
+		ImGui::End();
+	}
 	if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !board->isHolding()) {
 		ImVec2 wPos  = ImGui::GetWindowPos();
 		ImVec2 wSize = ImGui::GetWindowSize();
@@ -47,20 +71,20 @@ void Game::render() {
 		char file    = mPos.x / (wSize.x / 8);
 		char rank    = 8 - mPos.y / (wSize.y / 8);
 		Piece* p     = board->getPiece(glm::ivec2(file, rank));
-		if (p && p->getColor() == board->whoseTurn()) {
+		if (p && p->getColor() == board->whoseTurn() && !board->isWaitingOnPromotion()) {
 			board->grab(p);
 		}
 	} 
 	else if (ImGui::IsMouseReleased(0) && board->isHolding()) {
-		ImVec2 wPos = ImGui::GetWindowPos();
-		ImVec2 wSize = ImGui::GetWindowSize();
-		ImVec2 mPos = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
-		char file = mPos.x / (wSize.x / 8);
-		char rank = 8 - mPos.y / (wSize.y / 8);
-		Piece* targetPiece = board->getPiece(glm::ivec2(file, rank));
-		Piece* movedPiece = board->drop();
+		ImVec2 wPos			= ImGui::GetWindowPos();
+		ImVec2 wSize		= ImGui::GetWindowSize();
+		ImVec2 mPos			= { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
+		char file			= mPos.x / (wSize.x / 8);
+		char rank			= 8 - mPos.y / (wSize.y / 8);
+		Piece* targetPiece	= board->getPiece(glm::ivec2(file, rank));
+		Piece* movedPiece	= board->drop();
 		if (movedPiece) {
-			vec2s* legals = movedPiece->legalMoves(false);
+			vec2s* legals = movedPiece->legalMoves();
 			glm::ivec2 attempt = { file,rank };
 			if (std::find(legals->begin(), legals->end(), attempt) != legals->end()) {
 				board->makeLegalMove(movedPiece, attempt);
@@ -70,34 +94,8 @@ void Game::render() {
 	}
 	ImGui::End();
 
-	/*// Handle user entered moves
-	char move[16] = "";
-	bool move_entered = ImGui::InputText("Make Move", move, 16, ImGuiInputTextFlags_EnterReturnsTrue);
 
-	// Block moves until promotion has been dealt with
-	if (move_entered && !wait_for_promote) makeUserMove(move);
-	if (wait_for_promote) {
-		PieceType promote_to = open;
-		if (ImGui::Button("Queen")) {
-			board->promote<Queen>();
-			wait_for_promote = 0;
-			ImGui::SameLine();
-		}
-		if (ImGui::Button("Knight")) {
-			board->promote<Queen>();
-			wait_for_promote = 0;
-			ImGui::SameLine();
-		}
-		if (ImGui::Button("Rook")) {
-			board->promote<Queen>();
-			wait_for_promote = 0;
-			ImGui::SameLine();
-		}
-		if (ImGui::Button("Bishop")) {
-			board->promote<Queen>();
-			wait_for_promote = 0;
-			ImGui::SameLine();
-		}
-	}*/
 	ImGui::End();
 }
+
+

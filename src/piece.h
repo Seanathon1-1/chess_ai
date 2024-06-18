@@ -2,24 +2,29 @@
 
 #include "util.h"
 #include "board.h"
+#include "Texture.h"
 
 class Piece {
 protected:
-	Color     m_color;
-	glm::ivec2 m_position;
-	Board*    m_board;
-	bool      m_selected;
+	Color		m_color;
+	glm::ivec2	m_position;
+	Board*		m_board;
+	Texture*    m_texture;
+	bool		m_selected;
 
 	bool check4check(glm::ivec2);
 public:
 	Piece(Color, glm::ivec2, Board*);
+	~Piece();
 
 	Color getColor() { return m_color; }
 	void select() { m_selected = true; }
 	void deselect() { m_selected = false; }
 	bool isSelected() { return m_selected; }
+	GLuint getTexture() { return m_texture->getTexture(); }
 	glm::ivec2 getPosition() { return m_position; }
 	void place(glm::ivec2 pos) { m_position = pos; }
+	void createTexture();
 	
 	virtual Piece* copy(Board*) = 0;
 	virtual vec2s* legalMoves(bool = false) = 0;
