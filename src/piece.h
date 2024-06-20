@@ -12,7 +12,6 @@ protected:
 	Texture*    m_texture;
 	bool		m_selected;
 
-	bool check4check(glm::ivec2);
 public:
 	Piece(Color, glm::ivec2, Board*);
 	~Piece();
@@ -25,6 +24,7 @@ public:
 	glm::ivec2 getPosition() { return m_position; }
 	void place(glm::ivec2 pos) { m_position = pos; }
 	void createTexture();
+	bool check4check(glm::ivec2, bool = false);
 	
 	virtual Piece* copy(Board*) = 0;
 	virtual vec2s* legalMoves(bool = false) = 0;

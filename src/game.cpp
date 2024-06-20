@@ -84,7 +84,7 @@ void Game::render() {
 		Piece* targetPiece	= board->getPiece(glm::ivec2(file, rank));
 		Piece* movedPiece	= board->drop();
 		if (movedPiece) {
-			vec2s* legals = movedPiece->legalMoves();
+			vec2s* legals = board->getLegalPieceMoves(movedPiece, false);
 			glm::ivec2 attempt = { file,rank };
 			if (std::find(legals->begin(), legals->end(), attempt) != legals->end()) {
 				board->makeLegalMove(movedPiece, attempt);

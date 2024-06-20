@@ -75,9 +75,11 @@ public:
 	int getPassantFile(Color);
 	void render();
 	void makeUserMove(std::string);
+	vec2s* getLegalPieceMoves(Piece*, bool);
 	void makeLegalMove(Piece*, glm::ivec2);
 	bool hasLegalMove(Color);
 	bool isInCheck(Color);
+	void updateChecks();
 
 	void grab(Piece*);
 	bool move(Piece*, glm::ivec2);

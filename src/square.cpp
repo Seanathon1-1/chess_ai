@@ -6,14 +6,14 @@
 
 
 // Colors for the squares of the boardsquare
-#define LIGHT_SQUARE_COLOR glm::vec3(1.f) 
-#define DARK_SQUARE_COLOR glm::vec3(.1f, 0.f, .2f)
+const glm::vec3 LIGHT_SQUARE_COLOR = glm::vec3(1.f);
+const glm::vec3 DARK_SQUARE_COLOR = glm::vec3(.25f, 0.f, .35f);
 
 // Offsets to the corners of the board squares
-#define SQUARE_SIZE .25f
-glm::vec3 square_top_right_offset = glm::vec3(SQUARE_SIZE, 0.f, 0.f);
-glm::vec3 square_bottom_left_offset = glm::vec3(0.f, -1 * SQUARE_SIZE, 0.f);
-glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 0.f);
+constexpr float SQUARE_SIZE = .25f;
+const glm::vec3 square_top_right_offset = glm::vec3(SQUARE_SIZE, 0.f, 0.f);
+const glm::vec3 square_bottom_left_offset = glm::vec3(0.f, -1 * SQUARE_SIZE, 0.f);
+const glm::vec3 square_bottom_right_offset = glm::vec3(SQUARE_SIZE, -1 * SQUARE_SIZE, 0.f);
 
 /*-------------------------------------------------------------------------------------------------------------*\
 * Square::draw(Shader*)

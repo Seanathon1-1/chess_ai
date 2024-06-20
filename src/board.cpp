@@ -289,21 +289,20 @@ void Board::updateThreatMaps() {
 	black_threat_map = 0ULL;
 
 	Piece* piece;
-	vec2s* squares = new vec2s;
+	vec2s* squares;
 	uint64_t* threat_map;
 	for (int i = 0; i < 64; i++) {
-		squares->clear();
 		piece = board[i];
 		if (!piece) continue;
 		
 		threat_map = (piece->getColor() == white) ? &white_threat_map : &black_threat_map;
-		squares = piece->legalMoves(true);
+		squares = getLegalPieceMoves(piece, true);
 
 		for (glm::ivec2 sqr : *squares) {
 			set_bit(threat_map, sqr.y * 8 + sqr.x);
 		}
+		delete squares;
 	}
-	delete squares;
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -384,6 +383,16 @@ void Board::makeUserMove(std::string move) {
 	}
 }
 
+vec2s* Board::getLegalPieceMoves(Piece* piece, bool calculateThreats) {
+	vec2s* possibleMoves = piece->legalMoves(calculateThreats);
+	vec2s* legalMoves = new vec2s;
+	for (auto move : *possibleMoves) {
+		if (!piece->check4check(move, calculateThreats)) legalMoves->push_back(move);
+	}
+	delete possibleMoves;
+	return legalMoves;
+}
+
 /*-------------------------------------------------------------------------------------------------------------*\
 * Game::makeLegalMove(Piece, int, int)
 *
@@ -403,12 +412,10 @@ void Board::makeLegalMove(Piece* p, glm::ivec2 target) {
 		if (p->getColor() == white) {
 			white_short_castle = 0;
 			white_long_castle = 0;
-			white_king = target;
 		}
 		if (p->getColor() == black) {
 			black_short_castle = 0;
 			black_long_castle = 0;
-			black_king = target;
 		}
 	} else if (instanceof<Rook>(p)) {
 		if (p->getColor() == white) {
@@ -441,10 +448,7 @@ void Board::makeLegalMove(Piece* p, glm::ivec2 target) {
 	 
 	wait_for_promote |= move(p, target);
 
-	// Look for check
-	updateThreatMaps();
-	black_check = XTRC_BIT(white_threat_map, (black_king.y * 8 + black_king.x));
-	white_check = XTRC_BIT(black_threat_map, (white_king.y * 8 + white_king.x));
+	updateChecks();
 
 	if (wait_for_promote) {
 		game->createPromotionTextures();
@@ -501,6 +505,13 @@ void Board::clearSquare(glm::ivec2 s) {
 	placePiece(nullptr, s);
 }
 
+void Board::updateChecks() {
+	// Look for check
+	updateThreatMaps();
+	black_check = XTRC_BIT(white_threat_map, (black_king.y * 8 + black_king.x));
+	white_check = XTRC_BIT(black_threat_map, (white_king.y * 8 + white_king.x));
+}
+
 
 bool Board::move(Piece* piece, glm::ivec2 square) {
 	if (!piece) return false;
@@ -512,23 +523,25 @@ bool Board::move(Piece* piece, glm::ivec2 square) {
 	placePiece(piece, square);
 
 	// Extra move on castle
-	if (instanceof<King>(piece) && abs(origin.x - square.x) == 2) {
+	if (instanceof<King>(piece)) {
 		if (piece->getColor() == white) {
-			if (square.x == 6) {
+			white_king = square;
+			if (square.x == 6 && abs(origin.x - square.x) == 2) {
 				placePiece(getPiece(7, 0), 5, 0);
 				clearSquare(7, 0);
 			}
-			if (square.x == 2) {
+			if (square.x == 2 && abs(origin.x - square.x) == 2) {
 				placePiece(getPiece(0, 0), 3, 0);
 				clearSquare(0, 0);
 			}
 		}
 		if (piece->getColor() == black) {
-			if (square.x == 6) {
+			black_king = square;
+			if (square.x == 6 && abs(origin.x - square.x) == 2) {
 				placePiece(getPiece(7, 7), 5, 7);
 				clearSquare(7, 7);
 			}
-			if (square.x == 2) {
+			if (square.x == 2 && abs(origin.x - square.x) == 2) {
 				placePiece(getPiece(0, 7), 3, 7);
 				clearSquare(0, 7);
 			}
