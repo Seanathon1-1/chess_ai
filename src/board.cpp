@@ -25,35 +25,35 @@ Board::Board(GLuint fbo, Game* game) : fbo(fbo), game(game) {
  	memset(&board, 0, sizeof(Piece*) * 64);
 	// Pawns
 	for (int file = 0; file < 8; file++) {
-		board[8 + file]  = createPiece<Pawn>(white, { file, 1 }, this);
-		board[48 + file] = createPiece<Pawn>(black, { file, 6 }, this);
+		board[8 + file]  = createPiece<Pawn>(white, 8 + file, this);
+		board[48 + file] = createPiece<Pawn>(black, 48 + file, this);
 	}
 
 	// Rooks
-	board[ 0] = createPiece<Rook>(white, { 0,0 }, this);
-	board[ 7] = createPiece<Rook>(white, { 7,0 }, this);
-	board[56] = createPiece<Rook>(black, { 0,7 }, this);
-	board[63] = createPiece<Rook>(black, { 7,7 }, this);
+	board[ 0] = createPiece<Rook>(white, 0, this);
+	board[ 7] = createPiece<Rook>(white, 7, this);
+	board[56] = createPiece<Rook>(black, 56, this);
+	board[63] = createPiece<Rook>(black, 63, this);
 
 	// Knights
-	board[ 1] = createPiece<Knight>(white, { 1,0 }, this);
-	board[ 6] = createPiece<Knight>(white, { 6,0 }, this);
-	board[57] = createPiece<Knight>(black, { 1,7 }, this);
-	board[62] = createPiece<Knight>(black, { 6,7 }, this);
+	board[ 1] = createPiece<Knight>(white, 1, this);
+	board[ 6] = createPiece<Knight>(white, 6, this);
+	board[57] = createPiece<Knight>(black, 57, this);
+	board[62] = createPiece<Knight>(black, 62, this);
 
 	// Bishop
-	board[ 2] = createPiece<Bishop>(white, { 2,0 }, this);
-	board[ 5] = createPiece<Bishop>(white, { 5,0 }, this);
-	board[58] = createPiece<Bishop>(black, { 2,7 }, this);
-	board[61] = createPiece<Bishop>(black, { 5,7 }, this);
+	board[ 2] = createPiece<Bishop>(white, 2, this);
+	board[ 5] = createPiece<Bishop>(white, 5, this);
+	board[58] = createPiece<Bishop>(black, 58, this);
+	board[61] = createPiece<Bishop>(black, 61, this);
 
 	// Queens
-	board[ 3] = createPiece<Queen>(white, { 3,0 }, this);
-	board[59] = createPiece<Queen>(black, { 3,7 }, this);
+	board[ 3] = createPiece<Queen>(white, 3, this);
+	board[59] = createPiece<Queen>(black, 59, this);
 
 	// Kings
-	board[ 4] = createPiece<King>(white, { 4,0 }, this);
-	board[60] = createPiece<King>(black, { 4,7 }, this);
+	board[ 4] = createPiece<King>(white, 4, this);
+	board[60] = createPiece<King>(black, 60, this);
 
 	glGenTextures(1, &gBoard);
 	glBindTexture(GL_TEXTURE_2D, gBoard);
@@ -83,8 +83,8 @@ Board::Board(GLuint fbo, Game* game) : fbo(fbo), game(game) {
 	pieceShader = new Shader("res/shaders/piece.vert", "res/shaders/piece.frag");
 
 	whose_turn = white;
-	white_king = { 4, 0 };
-	black_king = { 4, 7 };
+	white_king = 4;
+	black_king = 60;
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -250,16 +250,16 @@ bool Board::canCastle(Castling whichCastle) {
 	bool transit_check;
 	switch (whichCastle) {
 	case WHITE_SHORT:
-		transit_check = XTRC_BIT(black_threat_map, white_king.y * 8 + white_king.x + 1);
+		transit_check = XTRC_BIT(black_threat_map, white_king + 1);
 		return (!white_check && !transit_check);
 	case WHITE_LONG:
-		transit_check = XTRC_BIT(black_threat_map, white_king.y * 8 + white_king.x - 1);
+		transit_check = XTRC_BIT(black_threat_map, white_king - 1);
 		return (!white_check && !transit_check);
 	case BLACK_SHORT:
-		transit_check = XTRC_BIT(white_threat_map, black_king.y * 8 + black_king.x + 1);
+		transit_check = XTRC_BIT(white_threat_map, black_king + 1);
 		return (!black_check && !transit_check);
 	case BLACK_LONG:
-		transit_check = XTRC_BIT(white_threat_map, black_king.y * 8 + black_king.x - 1);
+		transit_check = XTRC_BIT(white_threat_map, black_king - 1);
 		return (!black_check && !transit_check);
 	}
 	return false;
@@ -289,7 +289,7 @@ void Board::updateThreatMaps() {
 	black_threat_map = 0ULL;
 
 	Piece* piece;
-	vec2s* squares;
+	std::vector<uint8_t>* squares;
 	uint64_t* threat_map;
 	for (int i = 0; i < 64; i++) {
 		piece = board[i];
@@ -298,8 +298,8 @@ void Board::updateThreatMaps() {
 		threat_map = (piece->getColor() == white) ? &white_threat_map : &black_threat_map;
 		squares = getLegalPieceMoves(piece, true);
 
-		for (glm::ivec2 sqr : *squares) {
-			set_bit(threat_map, sqr.y * 8 + sqr.x);
+		for (uint8_t sqr : *squares) {
+			set_bit(threat_map, sqr);
 		}
 		delete squares;
 	}
@@ -350,10 +350,10 @@ void Board::makeUserMove(std::string move) {
 	}
 
 	// Check if the destination is a legal move
-	glm::ivec2 destination = glm::ivec2(df, dr);
-	vec2s* moves_possible = selected->legalMoves(false);
+	uint8_t destination = dr * 8 + df;
+	std::vector<uint8_t>* moves_possible = selected->legalMoves(false);
 	bool move_exists = 0;
-	for (glm::ivec2 move : *moves_possible) if (move == destination) { move_exists = 1; break; }
+	for (uint8_t move : *moves_possible) if (move == destination) { move_exists = 1; break; }
 	if (!move_exists) {
 		std::cout << "Move is not legal.\n";
 		return;
@@ -383,9 +383,9 @@ void Board::makeUserMove(std::string move) {
 	}
 }
 
-vec2s* Board::getLegalPieceMoves(Piece* piece, bool calculateThreats) {
-	vec2s* possibleMoves = piece->legalMoves(calculateThreats);
-	vec2s* legalMoves = new vec2s;
+std::vector<uint8_t>* Board::getLegalPieceMoves(Piece* piece, bool calculateThreats) {
+	std::vector<uint8_t>* possibleMoves = piece->legalMoves(calculateThreats);
+	std::vector<uint8_t>* legalMoves = new std::vector<uint8_t>();
 	for (auto move : *possibleMoves) {
 		if (!piece->check4check(move, calculateThreats)) legalMoves->push_back(move);
 	}
@@ -402,9 +402,9 @@ vec2s* Board::getLegalPieceMoves(Piece* piece, bool calculateThreats) {
 * Description: Makes the move on the board and accordingly updates the game state, such as castling availablity,
 *              en passant opportunities, whose turn, etc.
 \*-------------------------------------------------------------------------------------------------------------*/
-void Board::makeLegalMove(Piece* p, glm::ivec2 target) {
+void Board::makeLegalMove(Piece* p, uint8_t target) {
 	
-	glm::ivec2 src = p->getPosition();
+	uint8_t src = p->getPosition();
 	bool updatePassant = false;
 
 	// Enforce castling restrictions
@@ -419,20 +419,20 @@ void Board::makeLegalMove(Piece* p, glm::ivec2 target) {
 		}
 	} else if (instanceof<Rook>(p)) {
 		if (p->getColor() == white) {
-			if (src.x == 7 && src.y == 0) white_short_castle = 0;
-			if (src.x == 0 && src.y == 0) white_long_castle = 0;
+			if (src == 7) white_short_castle = 0;
+			if (src == 0) white_long_castle = 0;
 		}
 		if (p->getColor() == black) {
-			if (src.x == 7 && src.y == 7) black_short_castle = 0;
-			if (src.x == 0 && src.y == 7) black_long_castle = 0;
+			if (src == 56) black_short_castle = 0;
+			if (src == 49) black_long_castle = 0;
 		}
 	}
 	else if (instanceof<Pawn>(p)) {
 		updatePassant = true;
 		((Pawn*)p)->losePower();
-		glm::ivec2 enPassantCaptureSquare = (p->getColor() == white) ? glm::ivec2(black_en_passant, 5) : glm::ivec2(white_en_passant, 2);
+		uint8_t enPassantCaptureSquare = (p->getColor() == white) ? 40 + black_en_passant : 16 + white_en_passant;
 		if (target == enPassantCaptureSquare) {
-			clearSquare(enPassantCaptureSquare - glm::ivec2(0, p->getColor()));
+			clearSquare(enPassantCaptureSquare - p->getColor() * 8);
 		}
 	}
 
@@ -441,8 +441,8 @@ void Board::makeLegalMove(Piece* p, glm::ivec2 target) {
 	
 	// Check if en passant is available for next move
 	if (updatePassant) {
-		int dist = abs(target.y - src.y);
-		int pawn_file = src.x;
+		int dist = abs(target / 8 - src / 8);
+		int pawn_file = src % 8;
 		if (dist == 2) (p->getColor() == white) ? white_en_passant = pawn_file : black_en_passant = pawn_file;
 	}
 	 
@@ -489,34 +489,34 @@ Piece* Board::drop() {
 }
 
 void Board::placePiece(Piece* piece, int file, int rank) {
-	placePiece(piece, { file, rank });
+	placePiece(piece, rank * 8 + file );
 }
 
-void Board::placePiece(Piece* piece, glm::ivec2 square) {
-	board[square.y * 8 + square.x] = piece;
+void Board::placePiece(Piece* piece, uint8_t square) {
+	board[square] = piece;
 	if (piece) piece->place(square);
 }
 
-void Board::clearSquare(int f, int r) {
-	placePiece(nullptr, {f, r});
+void Board::clearSquare(int file, int rank) {
+	placePiece(nullptr, rank * 8 + file);
 }
 
-void Board::clearSquare(glm::ivec2 s) {
+void Board::clearSquare(uint8_t s) {
 	placePiece(nullptr, s);
 }
 
 void Board::updateChecks() {
 	// Look for check
 	updateThreatMaps();
-	black_check = XTRC_BIT(white_threat_map, (black_king.y * 8 + black_king.x));
-	white_check = XTRC_BIT(black_threat_map, (white_king.y * 8 + white_king.x));
+	black_check = XTRC_BIT(white_threat_map, black_king);
+	white_check = XTRC_BIT(black_threat_map, white_king);
 }
 
 
-bool Board::move(Piece* piece, glm::ivec2 square) {
+bool Board::move(Piece* piece, uint8_t square) {
 	if (!piece) return false;
 	// Clear old spot
-	glm::ivec2 origin = piece->getPosition();
+	uint8_t origin = piece->getPosition();
 	clearSquare(origin);
 
 	// Move to new spot
@@ -524,24 +524,26 @@ bool Board::move(Piece* piece, glm::ivec2 square) {
 
 	// Extra move on castle
 	if (instanceof<King>(piece)) {
+		uint8_t squareFile = square % 8;
+		uint8_t originFile = origin % 8;
 		if (piece->getColor() == white) {
 			white_king = square;
-			if (square.x == 6 && abs(origin.x - square.x) == 2) {
+			if (squareFile == 6 && abs(originFile - squareFile) == 2) {
 				placePiece(getPiece(7, 0), 5, 0);
 				clearSquare(7, 0);
 			}
-			if (square.x == 2 && abs(origin.x - square.x) == 2) {
+			if (squareFile == 2 && abs(originFile - squareFile) == 2) {
 				placePiece(getPiece(0, 0), 3, 0);
 				clearSquare(0, 0);
 			}
 		}
 		if (piece->getColor() == black) {
 			black_king = square;
-			if (square.x == 6 && abs(origin.x - square.x) == 2) {
+			if (squareFile == 6 && abs(originFile - squareFile) == 2) {
 				placePiece(getPiece(7, 7), 5, 7);
 				clearSquare(7, 7);
 			}
-			if (square.x == 2 && abs(origin.x - square.x) == 2) {
+			if (squareFile == 2 && abs(originFile - squareFile) == 2) {
 				placePiece(getPiece(0, 7), 3, 7);
 				clearSquare(0, 7);
 			}
@@ -550,8 +552,8 @@ bool Board::move(Piece* piece, glm::ivec2 square) {
 
 	// Check for promotion
 	int promotion_sqr = (piece->getColor() == white) ? 7 : 0;
-	if (instanceof<Pawn>(piece) && (square.y == promotion_sqr)) {
-		promoting = square.y * 8 + square.x;
+	if (instanceof<Pawn>(piece) && (square / 8 == promotion_sqr)) {
+		promoting = square;
 		return 1;
 	}
 	return 0;

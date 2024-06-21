@@ -12,21 +12,22 @@ Game::Game(Game* base) {
 }
 
 Game::~Game() {
+	deletePromotionTextures();
 	delete board;
 }
 
 void Game::createPromotionTextures() {
-	queenPromotion = new Texture(&Queen(board->whoseTurn(), { 0, 0 }, 0));
-	rookPromotion = new Texture(&Rook(board->whoseTurn(), { 0, 0 }, 0));
-	knightPromotion = new Texture(&Knight(board->whoseTurn(), { 0, 0 }, 0));
-	bishopPromotion = new Texture(&Bishop(board->whoseTurn(), { 0, 0 }, 0));
+	queenPromotion = new Texture(&Queen(board->whoseTurn(), 0, 0));
+	rookPromotion = new Texture(&Rook(board->whoseTurn(), 0, 0));
+	knightPromotion = new Texture(&Knight(board->whoseTurn(), 0, 0));
+	bishopPromotion = new Texture(&Bishop(board->whoseTurn(), 0, 0));
 }
 
 void Game::deletePromotionTextures() {
-	delete queenPromotion;
-	delete rookPromotion;
-	delete knightPromotion;
-	delete bishopPromotion;
+	if (queenPromotion) delete queenPromotion;
+	if (rookPromotion) delete rookPromotion;
+	if (knightPromotion) delete knightPromotion;
+	if (bishopPromotion) delete bishopPromotion;
 }
 
 /*-------------------------------------------------------------------------------------------------------------*\
@@ -70,7 +71,7 @@ void Game::render() {
 		ImVec2 mPos  = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
 		char file    = mPos.x / (wSize.x / 8);
 		char rank    = 8 - mPos.y / (wSize.y / 8);
-		Piece* p     = board->getPiece(glm::ivec2(file, rank));
+		Piece* p     = board->getPiece(rank * 8 + file);
 		if (p && p->getColor() == board->whoseTurn() && !board->isWaitingOnPromotion()) {
 			board->grab(p);
 		}
@@ -81,11 +82,11 @@ void Game::render() {
 		ImVec2 mPos			= { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
 		char file			= mPos.x / (wSize.x / 8);
 		char rank			= 8 - mPos.y / (wSize.y / 8);
-		Piece* targetPiece	= board->getPiece(glm::ivec2(file, rank));
+		Piece* targetPiece	= board->getPiece(rank * 8 + file);
 		Piece* movedPiece	= board->drop();
 		if (movedPiece) {
-			vec2s* legals = board->getLegalPieceMoves(movedPiece, false);
-			glm::ivec2 attempt = { file,rank };
+			std::vector<uint8_t>* legals = board->getLegalPieceMoves(movedPiece, false);
+			uint8_t attempt = rank * 8 + file;
 			if (std::find(legals->begin(), legals->end(), attempt) != legals->end()) {
 				board->makeLegalMove(movedPiece, attempt);
 			}

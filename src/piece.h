@@ -7,13 +7,13 @@
 class Piece {
 protected:
 	Color		m_color;
-	glm::ivec2	m_position;
+	uint8_t		m_position;
 	Board*		m_board;
 	Texture*    m_texture;
 	bool		m_selected;
 
 public:
-	Piece(Color, glm::ivec2, Board*);
+	Piece(Color, uint8_t, Board*);
 	~Piece();
 
 	Color getColor() { return m_color; }
@@ -21,13 +21,13 @@ public:
 	void deselect() { m_selected = false; }
 	bool isSelected() { return m_selected; }
 	GLuint getTexture() { return m_texture->getTexture(); }
-	glm::ivec2 getPosition() { return m_position; }
-	void place(glm::ivec2 pos) { m_position = pos; }
+	uint8_t getPosition() { return m_position; }
+	void place(uint8_t pos) { m_position = pos; }
 	void createTexture();
-	bool check4check(glm::ivec2, bool = false);
+	bool check4check(uint8_t, bool = false);
 	
 	virtual Piece* copy(Board*) = 0;
-	virtual vec2s* legalMoves(bool = false) = 0;
+	virtual std::vector<uint8_t>* legalMoves(bool = false) = 0;
 	virtual char textboardSymbol() = 0;
 };
 
@@ -35,14 +35,14 @@ class Knight : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	vec2s* legalMoves(bool) override;
+	std::vector<uint8_t>* legalMoves(bool) override;
 	char textboardSymbol() override { return 'N'; }
 };
 
 class Bishop : public Piece {
 public:
 	using Piece::Piece;
-	vec2s* legalMoves(bool) override;
+	std::vector<uint8_t>* legalMoves(bool) override;
 	Piece* copy(Board*) override;
 	char textboardSymbol() override { return 'B'; }
 };
@@ -51,7 +51,7 @@ class Rook : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	vec2s* legalMoves(bool) override;
+	std::vector<uint8_t>* legalMoves(bool) override;
 	char textboardSymbol() override { return 'R'; }
 };
 
@@ -59,7 +59,7 @@ class Queen : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	vec2s* legalMoves(bool) override;
+	std::vector<uint8_t>* legalMoves(bool) override;
 	char textboardSymbol() override { return 'Q'; }
 };
 
@@ -67,7 +67,7 @@ class King : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	vec2s* legalMoves(bool) override;
+	std::vector<uint8_t>* legalMoves(bool) override;
 	char textboardSymbol() override { return 'K'; }
 };
 
@@ -76,7 +76,7 @@ class Pawn : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	vec2s* legalMoves(bool) override;
+	std::vector<uint8_t>* legalMoves(bool) override;
 	void losePower() { m_canDoubleMove = false; }
 	char textboardSymbol() override { return 'P'; }
 };
