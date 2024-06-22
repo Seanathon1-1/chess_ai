@@ -16,12 +16,12 @@ public:
 	Piece(Color, uint8_t, Board*);
 	~Piece();
 
-	Color getColor() { return m_color; }
+	Color getColor()const { return m_color; }
 	void select() { m_selected = true; }
 	void deselect() { m_selected = false; }
-	bool isSelected() { return m_selected; }
+	bool isSelected() const { return m_selected; }
 	GLuint getTexture() { return m_texture->getTexture(); }
-	uint8_t getPosition() { return m_position; }
+	uint8_t getPosition() const { return m_position; }
 	void place(uint8_t pos) { m_position = pos; }
 	void createTexture();
 	bool check4check(uint8_t, bool = false);

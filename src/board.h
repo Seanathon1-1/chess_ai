@@ -20,21 +20,27 @@ T* createPiece(Color color, uint8_t position, Board* board) {
 }
 
 
+constexpr uint8_t WHITE_SHORT_CASTLE = 0x1;
+constexpr uint8_t WHITE_LONG_CASTLE = 0x2;
+constexpr uint8_t BLACK_SHORT_CASTLE = 0x4;
+constexpr uint8_t BLACK_LONG_CASTLE = 0x8;
+constexpr uint8_t WHITE_CHECK = 0x10;
+constexpr uint8_t BLACK_CHECK = 0x20;
+constexpr uint8_t PROMOTING = 0x40;
+
 
 class Board { 
 	// essential data
 	Game* game = 0;
 	Piece* board[64];
-	int promoting = -1;
+	int promotionSubject = -1;
  	// graphical components
 	unsigned int gBoard = 0;
 	unsigned int fbo = 0;
 	Shader* colorShader = nullptr;
 	Shader* pieceShader = nullptr;
 
-	// Who's in check
-	bool white_check = 0;
-	bool black_check = 0;
+	uint8_t gameStatus = 0xF;
 	// Where are the kings
 	uint8_t white_king;
 	uint8_t black_king; 
@@ -44,17 +50,10 @@ class Board {
 	// Which file has an en passant opportunity
 	int8_t white_en_passant = -1;
 	int8_t black_en_passant = -1;
-	// Castling availabilities
-	bool white_short_castle = 1;
-	bool black_short_castle = 1;
-	bool white_long_castle = 1;
-	bool black_long_castle = 1;
-	// Are we waiting for the player to decide how to promote their pawn
-	bool wait_for_promote = 0;
 	Piece* held = nullptr;
 
 
-	std::string printBoardString();
+	std::string printBoardString() const;
 	void printBoardImage();
 	void updateThreatMaps();
 	void placePiece(Piece*, int, int);
@@ -66,19 +65,19 @@ public:
 	Board(Board*); // Copies board state
 	~Board();
 	bool makeMove(Piece*, int, int);
-	bool canCastle(Castling);
-	Color whoseTurn() { return whose_turn; }
-	Piece* getPiece(int f, int r) { return board[r * 8 + f]; }
-	Piece* getPiece(uint8_t s) { return board[s]; }
+	bool canCastle(Castling) const;
+	Color whoseTurn() const { return whose_turn; }
+	Piece* getPiece(int f, int r) const { return board[r * 8 + f]; }
+	Piece* getPiece(uint8_t s) const { return board[s]; }
 	bool isHolding() { return (held != nullptr); }
-	bool isWaitingOnPromotion() { return wait_for_promote; }
-	int getPassantFile(Color);
+	bool isWaitingOnPromotion() const { return gameStatus & PROMOTING; }
+	int getPassantFile(Color) const;
 	void render();
 	void makeUserMove(std::string);
 	std::vector<uint8_t>* getLegalPieceMoves(Piece*, bool);
 	void makeLegalMove(Piece*, uint8_t);
-	bool hasLegalMove(Color);
-	bool isInCheck(Color);
+	bool hasLegalMove(Color) const;
+	bool isInCheck(Color) const;
 	void updateChecks();
 
 	void grab(Piece*);
@@ -88,15 +87,15 @@ public:
 
 	template<class T>
 	void promote() {
-		if (promoting == -1) {
+		if (promotionSubject == -1) {
 			std::cerr << "No piece able to promote!";
 			return;
 		}
 
-		Pawn* toDelete = (Pawn*)board[promoting];
-		board[promoting] = createPiece<T>(toDelete->getColor(), toDelete->getPosition(), this);
-		promoting = -1;
-		wait_for_promote = false;
+		Pawn* toDelete = (Pawn*)board[promotionSubject];
+		board[promotionSubject] = createPiece<T>(toDelete->getColor(), toDelete->getPosition(), this);
+		promotionSubject = -1;
+		gameStatus &= ~PROMOTING;
 		delete toDelete;
 		game->deletePromotionTextures();
 

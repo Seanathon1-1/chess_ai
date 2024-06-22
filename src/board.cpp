@@ -98,19 +98,14 @@ Board::Board(Board* base) {
 		if (base->board[i]) board[i] = (base->board[i])->copy(this);
 		else board[i] = nullptr;
 	}
-	white_check        = base->white_check;
-	black_check        = base->black_check;
-	white_king         = base->white_king;
-	black_king         = base->black_king;
-	whose_turn         = base->whose_turn;
-	white_threat_map   = base->white_threat_map;
-	black_threat_map   = base->black_threat_map;
-	white_en_passant   = base->white_en_passant;
-	black_en_passant   = base->black_en_passant;
-	white_short_castle = base->white_short_castle;
-	black_short_castle = base->black_short_castle;
-	white_long_castle  = base->white_long_castle;
-	black_long_castle  = base->black_long_castle;
+	gameStatus			= base->gameStatus;
+	white_king			= base->white_king;
+	black_king			= base->black_king;
+	whose_turn			= base->whose_turn;
+	white_threat_map	= base->white_threat_map;
+	black_threat_map	= base->black_threat_map;
+	white_en_passant	= base->white_en_passant;
+	black_en_passant	= base->black_en_passant;
 }
 
 // Performs cleanup before deleting the board
@@ -166,7 +161,7 @@ bool Board::makeMove(Piece* p, int s, int d) {
 * Description: Outputs a string represention of the current state of the board
 * Return: String representation of the board to be printed
 \*-------------------------------------------------------------------------------------------------------------*/
-std::string Board::printBoardString() {
+std::string Board::printBoardString() const {
 	Piece* p;
 	char piece_c;
 	std::string s = HORZ_LINE;
@@ -200,27 +195,31 @@ void Board::printBoardImage() {
 	ImGui::SetNextWindowPos(ImVec2(WIN_WIDTH - BOARD_SIZE, 0));
 	ImGui::SetNextWindowSize(ImVec2(BOARD_SIZE, BOARD_SIZE));
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
+		glm::vec3 topLeft;
+		Piece* p;
 		for (int i = 0; i < 64 ; i++) {
 			float left = (i % 8 - 4) * .25f;
 			float top = (i / -8 + 4) * .25f;
-			glm::vec3 top_left = glm::vec3(left, top, 0.f);
-			bool isBlack = (i % 2) ^ (i / 8 % 2);
-			Piece* p = board[i];
-			Square* s = new Square(top_left, isBlack, p);
-			s->draw(colorShader);
+			topLeft = glm::vec3(left, top, 0.f);
+			bool isLightSquare = (i % 2) ^ (i / 8 % 2);
+			p = board[i];
+			Square s = Square(topLeft, isLightSquare, p);
+			s.draw(colorShader);
 
-			if (p) {
-				if (p->isSelected()) {
-					delete s;
-					ImVec2 mPos = ImGui::GetMousePos();
-					top_left.x = mPos.x / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 3;
-					top_left.y = mPos.y / BOARD_SIZE * 2 + SQUARE_SIZE / 2 - 1;
-					s = new Square(top_left, isBlack, p);
-				}
-				s->drawTexture(pieceShader);
+			if (p && !p->isSelected()) {
+				s.drawTexture(pieceShader);
 			}
-			delete s;
 		}
+		if (held) {
+			ImVec2 mPos = ImGui::GetMousePos();
+			topLeft.x = mPos.x / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 3;
+			topLeft.y = mPos.y / BOARD_SIZE * 2 + SQUARE_SIZE / 2 - 1;
+			topLeft.z = -.1f;
+			p = held;
+			Square s = Square(topLeft, 0, p);
+			s.drawTexture(pieceShader);
+		}
+
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
 		glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -246,26 +245,31 @@ void Board::render() {
 	printBoardImage(); 
 }
 
-bool Board::canCastle(Castling whichCastle) {
-	bool transit_check;
+bool Board::canCastle(Castling whichCastle) const {
+	bool transitCheck;
+	bool currentCheck;
 	switch (whichCastle) {
 	case WHITE_SHORT:
-		transit_check = XTRC_BIT(black_threat_map, white_king + 1);
-		return (!white_check && !transit_check);
+		transitCheck = XTRC_BIT(black_threat_map, white_king + 1);
+		currentCheck = gameStatus & WHITE_CHECK;
+		return (!currentCheck && !transitCheck);
 	case WHITE_LONG:
-		transit_check = XTRC_BIT(black_threat_map, white_king - 1);
-		return (!white_check && !transit_check);
+		transitCheck = XTRC_BIT(black_threat_map, white_king - 1);
+		currentCheck = gameStatus & WHITE_CHECK;
+		return (!currentCheck && !transitCheck);
 	case BLACK_SHORT:
-		transit_check = XTRC_BIT(white_threat_map, black_king + 1);
-		return (!black_check && !transit_check);
+		transitCheck = XTRC_BIT(white_threat_map, black_king + 1);
+		currentCheck = gameStatus & BLACK_CHECK;
+		return (!currentCheck && !transitCheck);
 	case BLACK_LONG:
-		transit_check = XTRC_BIT(white_threat_map, black_king - 1);
-		return (!black_check && !transit_check);
+		transitCheck = XTRC_BIT(white_threat_map, black_king - 1);
+		currentCheck = gameStatus & BLACK_CHECK;
+		return (!currentCheck && !transitCheck);
 	}
 	return false;
 }
 
-int Board::getPassantFile(Color attacking) {
+int Board::getPassantFile(Color attacking) const {
 	return (attacking == white) ? black_en_passant : white_en_passant;
 }
 
@@ -366,11 +370,11 @@ void Board::makeUserMove(std::string move) {
 	// Look for checkmate/stalemate
 	if (hasLegalMove(whoseTurn())) {
 		// Checkmate
-		if (whoseTurn() == white && white_check) {
+		if (whoseTurn() == white && gameStatus & WHITE_CHECK) {
 			std::cout << "0-1" << std::endl;
 			return;
 		}
-		else if (whoseTurn() == black && black_check) {
+		else if (whoseTurn() == black && gameStatus & BLACK_CHECK) {
 			std::cout << "1-0" << std::endl;
 			return;
 		}
@@ -410,21 +414,19 @@ void Board::makeLegalMove(Piece* p, uint8_t target) {
 	// Enforce castling restrictions
 	if (instanceof<King>(p)) {
 		if (p->getColor() == white) {
-			white_short_castle = 0;
-			white_long_castle = 0;
+			gameStatus &= ~(WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE);
 		}
 		if (p->getColor() == black) {
-			black_short_castle = 0;
-			black_long_castle = 0;
+			gameStatus &= ~(BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE);
 		}
 	} else if (instanceof<Rook>(p)) {
 		if (p->getColor() == white) {
-			if (src == 7) white_short_castle = 0;
-			if (src == 0) white_long_castle = 0;
+			if (src == 7) gameStatus &= ~WHITE_SHORT_CASTLE;
+			if (src == 0) gameStatus &= ~WHITE_LONG_CASTLE;
 		}
 		if (p->getColor() == black) {
-			if (src == 56) black_short_castle = 0;
-			if (src == 49) black_long_castle = 0;
+			if (src == 63) gameStatus &= ~BLACK_SHORT_CASTLE;
+			if (src == 56) gameStatus &= ~BLACK_LONG_CASTLE;
 		}
 	}
 	else if (instanceof<Pawn>(p)) {
@@ -446,21 +448,20 @@ void Board::makeLegalMove(Piece* p, uint8_t target) {
 		if (dist == 2) (p->getColor() == white) ? white_en_passant = pawn_file : black_en_passant = pawn_file;
 	}
 	 
-	wait_for_promote |= move(p, target);
-
-	updateChecks();
-
-	if (wait_for_promote) {
+	if (move(p, target)) {
+		gameStatus |= PROMOTING;
 		game->createPromotionTextures();
 		return;
 	}
+
+	updateChecks();
 
 	// Other player's turn
 	if (whose_turn == white) whose_turn = black;
 	else whose_turn = white;
 }
 
-bool Board::hasLegalMove(Color c) {
+bool Board::hasLegalMove(Color c) const {
 	for (int i = 0; i < 64; i++) {
 		Piece* p = getPiece(i % 8, i / 8);
 		if (!p) continue;
@@ -471,8 +472,8 @@ bool Board::hasLegalMove(Color c) {
 	return false;
 }
 
-bool Board::isInCheck(Color c) {
-	return c == black && black_check || c == white && white_check;
+bool Board::isInCheck(Color c) const {
+	return c == black && (gameStatus & BLACK_CHECK) || c == white && (gameStatus & WHITE_CHECK);
 }
 
 void Board::grab(Piece* p) { 
@@ -507,9 +508,10 @@ void Board::clearSquare(uint8_t s) {
 
 void Board::updateChecks() {
 	// Look for check
+	gameStatus &= ~(WHITE_CHECK | BLACK_CHECK);
 	updateThreatMaps();
-	black_check = XTRC_BIT(white_threat_map, black_king);
-	white_check = XTRC_BIT(black_threat_map, white_king);
+	if (XTRC_BIT(white_threat_map, black_king)) gameStatus |= BLACK_CHECK;
+	if (XTRC_BIT(black_threat_map, white_king)) gameStatus |= WHITE_CHECK;
 }
 
 
@@ -553,7 +555,7 @@ bool Board::move(Piece* piece, uint8_t square) {
 	// Check for promotion
 	int promotion_sqr = (piece->getColor() == white) ? 7 : 0;
 	if (instanceof<Pawn>(piece) && (square / 8 == promotion_sqr)) {
-		promoting = square;
+		promotionSubject = square;
 		return 1;
 	}
 	return 0;

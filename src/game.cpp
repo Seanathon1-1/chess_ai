@@ -69,8 +69,8 @@ void Game::render() {
 		ImVec2 wPos  = ImGui::GetWindowPos();
 		ImVec2 wSize = ImGui::GetWindowSize();
 		ImVec2 mPos  = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
-		char file    = mPos.x / (wSize.x / 8);
-		char rank    = 8 - mPos.y / (wSize.y / 8);
+		char file    = (char)(mPos.x / (wSize.x / 8));
+		char rank    = (char)(8 - mPos.y / (wSize.y / 8));
 		Piece* p     = board->getPiece(rank * 8 + file);
 		if (p && p->getColor() == board->whoseTurn() && !board->isWaitingOnPromotion()) {
 			board->grab(p);
@@ -80,8 +80,8 @@ void Game::render() {
 		ImVec2 wPos			= ImGui::GetWindowPos();
 		ImVec2 wSize		= ImGui::GetWindowSize();
 		ImVec2 mPos			= { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
-		char file			= mPos.x / (wSize.x / 8);
-		char rank			= 8 - mPos.y / (wSize.y / 8);
+		char file			= (char)(mPos.x / (wSize.x / 8));
+		char rank			= (char)(8 - mPos.y / (wSize.y / 8));
 		Piece* targetPiece	= board->getPiece(rank * 8 + file);
 		Piece* movedPiece	= board->drop();
 		if (movedPiece) {

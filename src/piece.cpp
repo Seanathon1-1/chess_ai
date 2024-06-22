@@ -39,7 +39,7 @@ std::vector<uint8_t>* Knight::legalMoves(bool calculateThreats = false) {
 	// Check each potential move for legality
 	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
 	for (int i = 0; i < knightMoves.size(); i++) {
-		int8_t moveRankOffset = lround(knightMoves[i] / 8.f);
+		int8_t moveRankOffset = (uint8_t)lround(knightMoves[i] / 8.f);
 		int8_t moveFileOffset = knightMoves[i] - moveRankOffset * 8;
 		int8_t potentialMoveFile = m_position % 8 + moveFileOffset;
 		int8_t potentialMoveRank = m_position / 8 + moveRankOffset;
@@ -200,7 +200,7 @@ std::vector<uint8_t>* King::legalMoves(bool calculateThreats = false) {
 
 	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
 	for (int i = 0; i < kingMoves.size(); i++) {
-		int8_t moveRankOffset = lround(kingMoves[i] / 8.f);
+		int8_t moveRankOffset = (uint8_t)lround(kingMoves[i] / 8.f);
 		int8_t moveFileOffset = kingMoves[i] - moveRankOffset * 8;
 		int8_t potentialMoveFile = m_position % 8 + moveFileOffset;
 		int8_t potentialMoveRank = m_position / 8 + moveRankOffset;

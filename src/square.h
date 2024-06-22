@@ -3,11 +3,11 @@
 
 class Square {
 	glm::vec3 top_left_corner;
-	bool is_dark;
+	bool isLight;
 	Piece* piece;
 
 public:
-	Square(glm::vec3 tlc, bool dark, Piece* p) : top_left_corner(tlc), is_dark(dark), piece(p) {}
+	Square(glm::vec3 tlc, bool light, Piece* p) : top_left_corner(tlc), isLight(light), piece(p) {}
 	void draw(Shader*);
 	void drawTexture(Shader*);
 };

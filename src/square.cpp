@@ -26,7 +26,7 @@ void Square::draw(Shader* shader) {
 	glm::vec3 top_right_corner = top_left_corner + square_top_right_offset;
 	glm::vec3 bottom_left_corner = top_left_corner + square_bottom_left_offset;
 	glm::vec3 bottom_right_corner = top_left_corner + square_bottom_right_offset;
-	glm::vec3 color = (is_dark) ? DARK_SQUARE_COLOR : LIGHT_SQUARE_COLOR;
+	glm::vec3 color = (isLight) ? LIGHT_SQUARE_COLOR : DARK_SQUARE_COLOR;
 
 	// Vertex and index buffer data
 	float vertices[] = {
