@@ -84,14 +84,14 @@ void Square::drawTexture(Shader* shader) {
 	GLuint indices[] = { 0, 1, 2, 1, 2, 3 };
 
 	// Create opengl elements
-	VAO* vertex_array = new VAO();
-	vertex_array->bind();
-	VBO* vertex_buffer = new VBO(vertices, sizeof(vertices));
-	EBO* element_buffer = new EBO(indices, sizeof(indices));
+	VAO vertex_array = VAO();
+	vertex_array.bind();
+	VBO vertex_buffer = VBO(vertices, sizeof(vertices));
+	EBO element_buffer = EBO(indices, sizeof(indices));
 
 	// Link position and texture coordinate attributes
-	vertex_array->linkAttribute(vertex_buffer, 0, 3, GL_FLOAT, 5 * sizeof(float), (void*)0);
-	vertex_array->linkAttribute(vertex_buffer, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	vertex_array.linkAttribute(&vertex_buffer, 0, 3, GL_FLOAT, 5 * sizeof(float), (void*)0);
+	vertex_array.linkAttribute(&vertex_buffer, 1, 2, GL_FLOAT, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
 
 
@@ -100,17 +100,14 @@ void Square::drawTexture(Shader* shader) {
 	glEnable(GL_BLEND);
 	glUniform1i(glGetUniformLocation(shader->ID, "ourTexture"), 0);
 	glBindTexture(GL_TEXTURE_2D, piece->getTexture());
-	vertex_array->bind();
+	vertex_array.bind();
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 	// Cleanup
 	shader->deactivate();
 	glDisable(GL_BLEND);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	vertex_array->unbind();
-	vertex_buffer->unbind();
-	element_buffer->unbind();
-	delete vertex_array;
-	delete vertex_buffer;
-	delete element_buffer;
+	vertex_array.unbind();
+	vertex_buffer.unbind();
+	element_buffer.unbind();
 }

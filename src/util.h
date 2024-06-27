@@ -9,7 +9,6 @@
 #include "stb_image.h"
 
 #define ON_BOARD(s) ((0 <= (s) && (s) <= 7) ? 1 : 0)
-#define XTRC_BIT(map, bit) (((map) >> (bit)) & 1ULL)
 
 #define HORZ_LINE	"|---|---|---|---|---|---|---|---|\n"
 

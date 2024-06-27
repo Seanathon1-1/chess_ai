@@ -18,21 +18,11 @@ void Piece::createTexture() {
 	m_texture = new Texture(this);
 }
 
-bool Piece::check4check(uint8_t move, bool calculateThreats) {
-	Board* testingMove = new Board(m_board);
-	Piece* testingPiece = testingMove->getPiece(m_position);
-	testingMove->move(testingPiece, move);
-	if (!calculateThreats) testingMove->updateChecks();
-	bool inCheck = testingMove->isInCheck(m_color);
-	delete testingMove;
-	return inCheck;
-}
-
 Piece* Knight::copy(Board* newBoard) {
 	return new Knight(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Knight::legalMoves(bool calculateThreats = false) {
+std::vector<uint8_t>* Knight::possibleMoves(bool calculateThreats = false) {
 	// Vectors of move directions for the knight
 	std::vector<int8_t> knightMoves = { -17, -15, -10, -6, 6, 10, 15, 17 };
 
@@ -62,7 +52,7 @@ Piece* Bishop::copy(Board* newBoard) {
 	return new Bishop(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Bishop::legalMoves(bool calculateThreats = false) {
+std::vector<uint8_t>* Bishop::possibleMoves(bool calculateThreats = false) {
 	int8_t f; int8_t r; Piece* q_pieceHere;
 
 	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
@@ -122,7 +112,7 @@ Piece* Rook::copy(Board* newBoard) {
 	return new Rook(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Rook::legalMoves(bool calculateThreats = false) {
+std::vector<uint8_t>* Rook::possibleMoves(bool calculateThreats = false) {
 	int f; int r; Piece* q_pieceHere;
 
 	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
@@ -173,12 +163,12 @@ Piece* Queen::copy(Board* newBoard) {
 	return new Queen(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Queen::legalMoves(bool calculateThreats = false) {
+std::vector<uint8_t>* Queen::possibleMoves(bool calculateThreats = false) {
 	Bishop testBishop = Bishop(m_color, m_position, m_board);
 	Rook testRook = Rook(m_color, m_position, m_board);
 	
-	std::vector<uint8_t>* moveSquaresBishop = testBishop.legalMoves();
-	std::vector<uint8_t>* moveSquaresRook = testRook.legalMoves();
+	std::vector<uint8_t>* moveSquaresBishop = testBishop.possibleMoves();
+	std::vector<uint8_t>* moveSquaresRook = testRook.possibleMoves();
 
 	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
 	moveSquares->reserve(moveSquaresBishop->size() + moveSquaresRook->size());
@@ -195,7 +185,7 @@ Piece* King::copy(Board* newBoard) {
 	return new King(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* King::legalMoves(bool calculateThreats = false) {
+std::vector<uint8_t>* King::possibleMoves(bool calculateThreats = false) {
 	std::vector<int8_t> kingMoves = { -9, -8, -7, -1, 1, 7, 8, 9 };
 
 	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
@@ -216,23 +206,6 @@ std::vector<uint8_t>* King::legalMoves(bool calculateThreats = false) {
 		}
 	}
 
-	if (m_color == white) {
-		if (m_board->canCastle(WHITE_SHORT)) {
-			 moveSquares->push_back(6);
-		}
-		if (m_board->canCastle(WHITE_LONG)) {
-			 moveSquares->push_back(2);
-		}
-	}
-	if (m_color == black) {
-		if (m_board->canCastle(BLACK_SHORT)) {
-			moveSquares->push_back(62);
-		}
-		if (m_board->canCastle(BLACK_LONG)) {
-			moveSquares->push_back(58);
-		}
-	}
-
 	return moveSquares;
 }
 
@@ -240,10 +213,8 @@ Piece* Pawn::copy(Board* newBoard) {
 	return new Pawn(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Pawn::legalMoves(bool calculateThreats = false) { 
+std::vector<uint8_t>* Pawn::possibleMoves(bool calculateThreats = false) { 
 	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
-
-	int passant_rank = (m_color == white) ? 4 : 3;
 
 	// Normal move
 	int8_t pawnMoveDisplacement = m_color * 8;
@@ -274,12 +245,6 @@ std::vector<uint8_t>* Pawn::legalMoves(bool calculateThreats = false) {
 		uint8_t target = attackRank * 8 + rightFile;
 		Piece* p = m_board->getPiece((target));
 		if(p && p->getColor() == (m_color * -1) || calculateThreats) moveSquares->push_back(target);
-	}
-
-	// En passant TODO: move up above and track en passants using square, not file
-	if (currentRank == passant_rank) {
-		int f = m_board->getPassantFile(m_color);
-		if ((f == currentFile - 1 || f == currentFile + 1) ) moveSquares->push_back(attackRank * 8 + f);
 	}
 
 	return moveSquares;

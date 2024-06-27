@@ -6,27 +6,39 @@
 
 
 Texture::Texture(Piece* piece) {
-	createGLTexture(piece, &textureData);
+	createGLTexture(&textureData);
+	if (piece) addPieceTexture(piece);
 }
 
 Texture::~Texture() {
 	glDeleteTextures(1, &textureData);
 }
 
+void Texture::bind() {
+	glBindTexture(GL_TEXTURE_2D, textureData);
+}
+
+void Texture::unbind() {
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 GLuint Texture::getTexture() {
 	return textureData;
 }
 
-void Texture::createGLTexture(Piece* piece, GLuint* outputTexture) {
+void Texture::createGLTexture(GLuint* outputTexture) {
 	// setup opengl texture object 
-	int width, height, nChannels;
-	unsigned int texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
+	glGenTextures(1, outputTexture);
+	bind();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	unbind();
+}
+
+void Texture::addPieceTexture(Piece* piece) {
+	int width, height, nChannels;
 
 	// Get texture from file through stb image
 	std::string texture_path = "res/textures/";
@@ -35,6 +47,7 @@ void Texture::createGLTexture(Piece* piece, GLuint* outputTexture) {
 	texture_path.append(".png");
 	unsigned char* data = stbi_load(texture_path.c_str(), &width, &height, &nChannels, 0);
 	if (data) {
+		bind();
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
@@ -45,8 +58,7 @@ void Texture::createGLTexture(Piece* piece, GLuint* outputTexture) {
 		std::cerr << "Working Directory: " << buffer << std::endl;
 	}
 	stbi_image_free(data);
-
-	*outputTexture = texture;
+	unbind();
 }
 
 void* Texture::getTextureData() {

@@ -54,11 +54,11 @@ int main() {
 
     // Initialization for our program's graphical components
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    unsigned int frame_buffer_object;
-    glGenFramebuffers(1, &frame_buffer_object);
-
+    unsigned int frameBufferObject;
+    glGenFramebuffers(1, &frameBufferObject);
+    
     // Let's get this game going!
-    Game game(frame_buffer_object);
+    GraphicalGame game(frameBufferObject);
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -70,6 +70,23 @@ int main() {
         // Clear the screen and render our game
         glClearColor(0.f, 0.f, 0.f, 1.f);
         game.render();
+
+        ImGui::ShowDemoWindow();
+
+        ImGui::Begin("Move List");
+        ImGui::BeginListBox("##", {200, 300});
+        const bool selected = true;
+        ImGui::Selectable("Starting Position", selected);
+        if (ImGui::BeginTable("Move List", 2)) {
+            ImGui::TableNextColumn(); 
+            ImGui::Selectable("White Move 1");
+            ImGui::TableNextColumn();
+            ImGui::Selectable("Black Move 1");
+            ImGui::EndTable();
+        }
+        
+        ImGui::EndListBox();
+        ImGui::End();
 
         // Render imgui into screen
         ImGui::Render();
