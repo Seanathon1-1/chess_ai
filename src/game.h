@@ -4,24 +4,32 @@
 #include <vector>
 
 
+// Masks for game status
+constexpr uint16_t WHITE_SHORT_CASTLE	= 0x001;
+constexpr uint16_t WHITE_LONG_CASTLE	= 0x002;
+constexpr uint16_t BLACK_SHORT_CASTLE	= 0x004;
+constexpr uint16_t BLACK_LONG_CASTLE	= 0x008;
+constexpr uint16_t WHITE_CHECK			= 0x010;
+constexpr uint16_t BLACK_CHECK			= 0x020;
+constexpr uint16_t PROMOTING			= 0x040;
+constexpr uint16_t WHOSE_TURN			= 0x080;
+constexpr uint16_t PLAY_STATUS			= 0x300;
 
-constexpr uint8_t WHITE_SHORT_CASTLE = 0x1;
-constexpr uint8_t WHITE_LONG_CASTLE = 0x2;
-constexpr uint8_t BLACK_SHORT_CASTLE = 0x4;
-constexpr uint8_t BLACK_LONG_CASTLE = 0x8;
-constexpr uint8_t WHITE_CHECK = 0x10;
-constexpr uint8_t BLACK_CHECK = 0x20;
-constexpr uint8_t PROMOTING = 0x40;
-constexpr uint8_t WHOSE_TURN = 0x80;
+// PLAY_STATUS values
+constexpr uint16_t PLAYING		= 0x000;
+constexpr uint16_t WHITE_WIN	= 0x100;
+constexpr uint16_t BLACK_WIN	= 0x200;
+constexpr uint16_t STALEMATE	= 0x300;
 
 
 class Game {
 protected:
 	Board* board = nullptr;
+	std::vector<std::string> moveList;
 
 	int promotionSubject = -1;
 
-	uint8_t gameStatus = 0xF;
+	uint16_t gameStatus = 0xF;
 	// Where are the kings
 	uint8_t whiteKing;
 	uint8_t blackKing;
@@ -32,7 +40,7 @@ protected:
 	bool isWaitingOnPromotion() const { return gameStatus & PROMOTING; }
 	bool canCastle(Castling) const;
 	Color whoseTurn() const;
-	void makeLegalMove(Piece*, uint8_t);
+	bool makeLegalMove(Piece*, uint8_t);
 	bool isInCheck(Color) const;
 	void updateThreatMaps();
 	void updateChecks();
@@ -58,13 +66,15 @@ protected:
 		gameStatus &= ~PROMOTING;
 		delete toDelete;
 
+		std::string promotionMove = moveList[moveList.size() - 1];
+		moveList.pop_back();
+		moveList[moveList.size() - 1] = promotionMove + "=" + promotedPiece->textboardSymbol();
 		gameStatus ^= WHOSE_TURN;
 	}
 public:
 	Game();
 	Game(Game*);
 	~Game();
-
 };
 
 class GraphicalGame : public Game {
@@ -82,6 +92,7 @@ class GraphicalGame : public Game {
 
 	bool isHolding() { return (held != nullptr); }
 	void printBoardImage();
+	void printMoveList();
 	void grab(Piece*);
 	Piece* drop();
 	void handlePromotion();

@@ -162,3 +162,11 @@ void Board::clearSquare(int file, int rank) {
 void Board::clearSquare(uint8_t s) {
 	placePiece(nullptr, s);
 }
+
+Piece* Board::getPiece(int f, int r) const {
+	return getPiece(r * 8 + f);
+}
+Piece* Board::getPiece(uint8_t s) const {
+	if (s < 64)  return board[s];
+	else return 0;
+}

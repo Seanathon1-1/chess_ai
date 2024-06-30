@@ -35,7 +35,7 @@ Game::Game(Game* base) {
 }
 
 Game::~Game() {
-	delete board;
+	if (board) delete board;
 }
 
 bool Game::canCastle(Castling whichCastle) const {
@@ -148,20 +148,24 @@ std::vector<uint8_t>* Game::getLegalPieceMoves(Piece* piece, bool calculateThrea
 
 void Game::checkIfGameEnded() {
 	// Look for checkmate/stalemate
-	if (!hasLegalMove(whoseTurn())) {
+	Color nextPlayer = (whoseTurn() == white) ? black : white;
+	if (!hasLegalMove(nextPlayer)) {
 		// Checkmate
-		if (whoseTurn() == white && gameStatus & WHITE_CHECK) {
+		if (nextPlayer == white && gameStatus & WHITE_CHECK) {
 			std::cout << "0-1" << std::endl;
+			gameStatus |= BLACK_WIN;
 			return;
 		}
-		else if (whoseTurn() == black && gameStatus & BLACK_CHECK) {
+		else if (nextPlayer == black && gameStatus & BLACK_CHECK) {
 			std::cout << "1-0" << std::endl;
+			gameStatus |= WHITE_WIN;
 			return;
 		}
 
 		// Stalemate
 		else {
 			std::cout << ".5-.5" << std::endl;
+			gameStatus |= STALEMATE;
 			return;
 		}
 	}
@@ -196,7 +200,7 @@ void Game::updateChecks() {
 * Description: Makes the move on the board and accordingly updates the game state, such as castling availablity,
 *              en passant opportunities, whose turn, etc.
 \*-------------------------------------------------------------------------------------------------------------*/
-void Game::makeLegalMove(Piece* p, uint8_t target) {
+bool Game::makeLegalMove(Piece* p, uint8_t target) {
 
 	uint8_t src = p->getPosition();
 	bool updatePassant = false;
@@ -237,16 +241,39 @@ void Game::makeLegalMove(Piece* p, uint8_t target) {
 		if (dist == 2) enPassantSquare = enPassantTarget;
 	}
 
-	if (move(p, target)) {
+	char sourceFile = 'a' + src % 8;
+	char sourceRank = '1' + src / 8;
+	char targetFile = 'a' + target % 8;
+	char targetRank = '1' + target / 8;
+	bool captureOccured = board->getPiece(target);
+	std::string moveString = "";
+	if (whoseTurn() == white) moveString += std::to_string(moveList.size() / 2 + 1) + ". ";
+	if (!instanceof<Pawn>(p)) moveString += p->textboardSymbol();
+	else if (captureOccured) moveString += 'a' + src % 8;
+	if (captureOccured) moveString += "x";
+	moveString += targetFile;
+	moveString += targetRank;
+	moveList.push_back(moveString);
 
-		return;
+	if (move(p, target)) {
+		handlePromotion();
+		return true;
 	}
 
+	
 	updateChecks();
+	if ((gameStatus & WHITE_CHECK && whoseTurn() == black) || (gameStatus & BLACK_CHECK && whoseTurn() == white)) moveList[moveList.size() - 1] += "+";
+
+
 	checkIfGameEnded();
+	if (((gameStatus & PLAY_STATUS) == WHITE_WIN) || ((gameStatus & PLAY_STATUS) == BLACK_WIN)) {
+		moveList[moveList.size() - 1].pop_back();
+		moveList[moveList.size() - 1] += "#";
+	}
 
 	// Other player's turn
 	gameStatus ^= WHOSE_TURN;
+	return false;
 }
 
 bool Game::move(Piece* piece, uint8_t square) {
@@ -359,6 +386,8 @@ void GraphicalGame::handlePromotion() {
 	createPromotionTextures();
 }
 
+
+#define FIX_BOARD_POSITION
 void GraphicalGame::printBoardImage() {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 	glEnable(GL_DEPTH_TEST);
@@ -366,8 +395,10 @@ void GraphicalGame::printBoardImage() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
+#ifdef FIX_BOARD_POSITION
 	ImGui::SetNextWindowPos(ImVec2(WIN_WIDTH - BOARD_SIZE, 0));
 	ImGui::SetNextWindowSize(ImVec2(BOARD_SIZE, BOARD_SIZE));
+#endif
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
 		glm::vec3 topLeft;
 		Piece* p;
@@ -405,6 +436,26 @@ void GraphicalGame::printBoardImage() {
 	ImGui::End();
 }
 
+
+void GraphicalGame::printMoveList() {
+	if (ImGui::Begin("Move List")) {
+		if (ImGui::BeginListBox("##", { 200, 300 })) {
+			ImGui::Selectable("Starting Position", false);
+			if (ImGui::BeginTable("Move List", 2, ImGuiTableFlags_Borders, ImVec2(190.f, 0.f))) {
+				int i = 1;
+				for (std::string move : moveList) {
+					ImGui::TableNextColumn();
+					ImGui::Selectable(move.c_str(), false);
+					i++;
+				}
+			}
+			ImGui::EndTable();
+		}
+		ImGui::EndListBox();
+	}
+	ImGui::End();
+}
+
 /*-------------------------------------------------------------------------------------------------------------*\
 * GraphicalGame::render()
 * 
@@ -412,33 +463,50 @@ void GraphicalGame::printBoardImage() {
 \*-------------------------------------------------------------------------------------------------------------*/
 void GraphicalGame::render() {
 	printBoardImage();
+	printMoveList();
 
 	ImGui::Begin("Gameview");
 	ImGuiIO& io = ImGui::GetIO();
 
 	if (isWaitingOnPromotion()) {
+		PieceType promotionPiece = open;
 		ImGui::Begin("Promotion Selection", 0, ImGuiWindowFlags_NoTitleBar);
 
 		if (ImGui::ImageButton("Queen", queenPromotion->getTextureData(), ImVec2(70, 70))) {
-			promote<Queen>();
+			promotionPiece = queen;
 		}
 		ImGui::SameLine();
 		if (ImGui::ImageButton("Rook", rookPromotion->getTextureData(), ImVec2(70, 70))) {
-			promote<Rook>();
+			promotionPiece = rook;
 		}
 
 		if (ImGui::ImageButton("Knight", knightPromotion->getTextureData(), ImVec2(70, 70))) {
-			promote<Knight>();
+			promotionPiece = knight;
 		}
 		ImGui::SameLine();
 		if (ImGui::ImageButton("Bishop", bishopPromotion->getTextureData(), ImVec2(70, 70))) {
-			promote<Bishop>();
+			promotionPiece = bishop;
 		}
 
+		switch (promotionPiece) {
+		case queen:
+			promote<Queen>();
+			break;
+		case rook:
+			promote<Rook>();
+			break;
+		case knight:
+			promote<Knight>();
+			break;
+		case bishop:
+			promote<Bishop>();
+			break;
+		}
 
 		ImGui::End();
 	}
-	if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !isHolding()) {
+
+	else if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered() && !isHolding()) {
 		ImVec2 wPos  = ImGui::GetWindowPos();
 		ImVec2 wSize = ImGui::GetWindowSize();
 		ImVec2 mPos  = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
@@ -449,6 +517,7 @@ void GraphicalGame::render() {
 			grab(p);
 		}
 	} 
+
 	else if (ImGui::IsMouseReleased(0) && isHolding()) {
 		ImVec2 wPos			= ImGui::GetWindowPos();
 		ImVec2 wSize		= ImGui::GetWindowSize();
@@ -461,7 +530,7 @@ void GraphicalGame::render() {
 			std::vector<uint8_t>* legals = getLegalPieceMoves(movedPiece, false);
 			uint8_t attempt = rank * 8 + file;
 			if (std::find(legals->begin(), legals->end(), attempt) != legals->end()) {
-				makeLegalMove(movedPiece, attempt);
+				if (makeLegalMove(movedPiece, attempt)) handlePromotion();
 			}
 			delete legals;
 		}

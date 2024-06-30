@@ -27,14 +27,14 @@ public:
 	Board(Game*); // Creates new starting board
 	Board(Board*); // Copies board state
 	~Board();
-	
+
 	void placePiece(Piece*, int, int);
 	void placePiece(Piece*, uint8_t);
 	void clearSquare(int, int);
 	void clearSquare(uint8_t);
 
-	Piece* getPiece(int f, int r) const { return board[r * 8 + f]; }
-	Piece* getPiece(uint8_t s) const { return board[s]; }
+	Piece* getPiece(int f, int r) const;
+	Piece* getPiece(uint8_t s) const;
 	bool makeMove(Piece*, uint8_t, uint8_t);
 	void passantCapture(uint8_t);
 	

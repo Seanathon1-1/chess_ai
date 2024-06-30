@@ -130,7 +130,7 @@ std::vector<uint8_t>* Rook::possibleMoves(bool calculateThreats = false) {
 	}
 
 	// Right
-	for (f = currentFile; f < 8; f++) {
+	for (f = currentFile + 1; f < 8; f++) {
 		moveSquare = currentRank * 8 + f;
 		q_pieceHere = m_board->getPiece(moveSquare);
 		if (!q_pieceHere) moveSquares->push_back(moveSquare);

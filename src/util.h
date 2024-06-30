@@ -10,12 +10,12 @@
 
 #define ON_BOARD(s) ((0 <= (s) && (s) <= 7) ? 1 : 0)
 
-#define HORZ_LINE	"|---|---|---|---|---|---|---|---|\n"
+constexpr const char* HORZ_LINE = "|---|---|---|---|---|---|---|---|\n";
 
-#define WIN_TITLE "Chess AI"
-#define WIN_WIDTH  800
-#define WIN_HEIGHT 600
-#define NULL_UINT 0xFFFFFFFF
+constexpr const char* WIN_TITLE = "Chess AI";
+constexpr uint16_t WIN_WIDTH = 800;
+constexpr uint16_t WIN_HEIGHT = 600;
+constexpr uint32_t NULL_UINT = 0xFFFFFFFF;
 
 enum PieceType { open, pawn, knight, bishop, rook, queen, king };
 enum Color { black = -1, none, white };

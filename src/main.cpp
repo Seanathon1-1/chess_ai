@@ -73,21 +73,6 @@ int main() {
 
         ImGui::ShowDemoWindow();
 
-        ImGui::Begin("Move List");
-        ImGui::BeginListBox("##", {200, 300});
-        const bool selected = true;
-        ImGui::Selectable("Starting Position", selected);
-        if (ImGui::BeginTable("Move List", 2)) {
-            ImGui::TableNextColumn(); 
-            ImGui::Selectable("White Move 1");
-            ImGui::TableNextColumn();
-            ImGui::Selectable("Black Move 1");
-            ImGui::EndTable();
-        }
-        
-        ImGui::EndListBox();
-        ImGui::End();
-
         // Render imgui into screen
         ImGui::Render();
         glClear(GL_COLOR_BUFFER_BIT);
