@@ -450,6 +450,9 @@ void GraphicalGame::printMoveList() {
 				}
 			}
 			ImGui::EndTable();
+			if ((gameStatus & PLAY_STATUS) == WHITE_WIN) ImGui::Text("1-0");
+			if ((gameStatus & PLAY_STATUS) == BLACK_WIN) ImGui::Text("0-1");
+			if ((gameStatus & PLAY_STATUS) == STALEMATE) ImGui::Text(".5-.5");
 		}
 		ImGui::EndListBox();
 	}
@@ -467,6 +470,11 @@ void GraphicalGame::render() {
 
 	ImGui::Begin("Gameview");
 	ImGuiIO& io = ImGui::GetIO();
+
+	if ((gameStatus & PLAY_STATUS) != PLAYING) {
+		ImGui::End();
+		return;
+	}
 
 	if (isWaitingOnPromotion()) {
 		PieceType promotionPiece = open;
