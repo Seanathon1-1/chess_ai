@@ -22,12 +22,11 @@ Piece* Knight::copy(Board* newBoard) {
 	return new Knight(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Knight::possibleMoves(bool calculateThreats = false) {
+void Knight::possibleMoves(std::vector<Move>* moves, bool calculateThreats = false) {
 	// Vectors of move directions for the knight
 	std::vector<int8_t> knightMoves = { -17, -15, -10, -6, 6, 10, 15, 17 };
 
 	// Check each potential move for legality
-	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
 	for (int i = 0; i < knightMoves.size(); i++) {
 		int8_t moveRankOffset = (uint8_t)lround(knightMoves[i] / 8.f);
 		int8_t moveFileOffset = knightMoves[i] - moveRankOffset * 8;
@@ -35,27 +34,24 @@ std::vector<uint8_t>* Knight::possibleMoves(bool calculateThreats = false) {
 		int8_t potentialMoveRank = m_position / 8 + moveRankOffset;
 
 		if (!ON_BOARD(potentialMoveFile) || !ON_BOARD(potentialMoveRank)) continue;
-		uint8_t potentialMove = m_position + knightMoves[i];
-		Piece* target = m_board->getPiece(potentialMove);
-		Color target_color = (target) ? target->getColor() : none;
+		Move potentialMove = { this, m_position,(uint8_t)(m_position + knightMoves[i]) };
+		Piece* targetPiece = m_board->getPiece(potentialMove.target);
+		Color target_color = (targetPiece) ? targetPiece->getColor() : none;
 
 		bool checkSameColor = (target_color != m_color) || calculateThreats;
 		if (checkSameColor) {
-			moveSquares->push_back(potentialMove);
+			moves->push_back(potentialMove);
 		}
 	}
-
-	return moveSquares;
 }
 
 Piece* Bishop::copy(Board* newBoard) {
 	return new Bishop(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Bishop::possibleMoves(bool calculateThreats = false) {
+void Bishop::possibleMoves(std::vector<Move>* moves, bool calculateThreats = false) {
 	int8_t f; int8_t r; Piece* q_pieceHere;
 
-	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
 	uint8_t currentFile = m_position % 8;
 	uint8_t currentRank = m_position / 8;
 	uint8_t moveSquare;
@@ -66,9 +62,9 @@ std::vector<uint8_t>* Bishop::possibleMoves(bool calculateThreats = false) {
 	while (f >= 0 && r < 8) {
 		moveSquare = r * 8 + f;
 		q_pieceHere = m_board->getPiece(moveSquare);
-		if (!q_pieceHere) moveSquares->push_back(moveSquare);
+		if (!q_pieceHere) moves->push_back({ this, m_position, moveSquare });
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back(moveSquare); break; }
+		else { moves->push_back({ this, m_position, moveSquare }); break; }
 		f--; r++;
 	}
 
@@ -77,9 +73,9 @@ std::vector<uint8_t>* Bishop::possibleMoves(bool calculateThreats = false) {
 	while (f < 8 && r < 8) {
 		moveSquare = r * 8 + f;
 		q_pieceHere = m_board->getPiece(moveSquare);
-		if (!q_pieceHere) moveSquares->push_back(moveSquare);
+		if (!q_pieceHere) moves->push_back({ this, m_position, moveSquare });
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back(moveSquare); break; }
+		else { moves->push_back({this, m_position, moveSquare}); break; }
 		f++; r++;
 	}
 
@@ -88,9 +84,9 @@ std::vector<uint8_t>* Bishop::possibleMoves(bool calculateThreats = false) {
 	while (f >= 0 && r >= 0) {
 		moveSquare = r * 8 + f;
 		q_pieceHere = m_board->getPiece(moveSquare);
-		if (!q_pieceHere) moveSquares->push_back(moveSquare);
+		if (!q_pieceHere) moves->push_back({this, m_position, moveSquare});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back(moveSquare); break; }
+		else { moves->push_back({this, m_position, moveSquare}); break; }
 		f--; r--;
 	}
 
@@ -99,23 +95,20 @@ std::vector<uint8_t>* Bishop::possibleMoves(bool calculateThreats = false) {
 	while (f < 8 && r >= 0) {
 		moveSquare = r * 8 + f;
 		q_pieceHere = m_board->getPiece(moveSquare);
-		if (!q_pieceHere) moveSquares->push_back(moveSquare);
+		if (!q_pieceHere) moves->push_back({this, m_position, moveSquare});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back(moveSquare); break; }
+		else { moves->push_back({this, m_position, moveSquare}); break; }
 		f++; r--;
 	}
-
-	return moveSquares;
 }
 
 Piece* Rook::copy(Board* newBoard) {
 	return new Rook(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Rook::possibleMoves(bool calculateThreats = false) {
+void Rook::possibleMoves(std::vector<Move>* moves, bool calculateThreats = false) {
 	int f; int r; Piece* q_pieceHere;
 
-	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
 	uint8_t currentFile = m_position % 8;
 	uint8_t currentRank = m_position / 8;
 	uint8_t moveSquare;
@@ -124,71 +117,58 @@ std::vector<uint8_t>* Rook::possibleMoves(bool calculateThreats = false) {
 	for (f = currentFile - 1; f >= 0; f--) {
 		moveSquare = currentRank * 8 + f;
 		q_pieceHere = m_board->getPiece(moveSquare);
-		if (!q_pieceHere) moveSquares->push_back(moveSquare);
+		if (!q_pieceHere) moves->push_back({this, m_position, moveSquare});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back(moveSquare); break; }
+		else { moves->push_back({this, m_position, moveSquare}); break; }
 	}
 
 	// Right
 	for (f = currentFile + 1; f < 8; f++) {
 		moveSquare = currentRank * 8 + f;
 		q_pieceHere = m_board->getPiece(moveSquare);
-		if (!q_pieceHere) moveSquares->push_back(moveSquare);
+		if (!q_pieceHere) moves->push_back({this, m_position, moveSquare});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back(moveSquare); break; }
+		else { moves->push_back({this, m_position, moveSquare}); break; }
 	}
 
 	// Up
 	for (r = currentRank + 1; r < 8; r++) {
 		moveSquare = r * 8 + currentFile;
 		q_pieceHere = m_board->getPiece(moveSquare);
-		if (!q_pieceHere) moveSquares->push_back(moveSquare);
+		if (!q_pieceHere) moves->push_back({this, m_position, moveSquare});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back(moveSquare); break; }
+		else { moves->push_back({this, m_position, moveSquare}); break; }
 	}
 
 	// Down
 	for (r = currentRank - 1; r >= 0; r--) {
 		moveSquare = r * 8 + currentFile;
 		q_pieceHere = m_board->getPiece(moveSquare);
-		if (!q_pieceHere) moveSquares->push_back(moveSquare);
+		if (!q_pieceHere) moves->push_back({this, m_position, moveSquare});
 		else if (q_pieceHere->getColor() == m_color && !calculateThreats) break;
-		else { moveSquares->push_back(moveSquare); break; }
+		else { moves->push_back({ this, m_position, moveSquare }); break; }
 	}
-
-	return moveSquares;
 }
 
 Piece* Queen::copy(Board* newBoard) {
 	return new Queen(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Queen::possibleMoves(bool calculateThreats = false) {
+void Queen::possibleMoves(std::vector<Move>* moves, bool calculateThreats = false) {
 	Bishop testBishop = Bishop(m_color, m_position, m_board);
 	Rook testRook = Rook(m_color, m_position, m_board);
 	
-	std::vector<uint8_t>* moveSquaresBishop = testBishop.possibleMoves();
-	std::vector<uint8_t>* moveSquaresRook = testRook.possibleMoves();
-
-	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
-	moveSquares->reserve(moveSquaresBishop->size() + moveSquaresRook->size());
-	moveSquares->insert(moveSquares->end(), moveSquaresBishop->begin(), moveSquaresBishop->end());
-	moveSquares->insert(moveSquares->end(), moveSquaresRook->begin(), moveSquaresRook->end());
-
-
-	delete moveSquaresBishop;
-	delete moveSquaresRook;
-	return moveSquares;
+	testBishop.possibleMoves(moves);
+	testRook.possibleMoves(moves);
 }
 
 Piece* King::copy(Board* newBoard) {
 	return new King(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* King::possibleMoves(bool calculateThreats = false) {
+void King::possibleMoves(std::vector<Move>* moves, bool calculateThreats = false) {
 	std::vector<int8_t> kingMoves = { -9, -8, -7, -1, 1, 7, 8, 9 };
 
-	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
 	for (int i = 0; i < kingMoves.size(); i++) {
 		int8_t moveRankOffset = (uint8_t)lround(kingMoves[i] / 8.f);
 		int8_t moveFileOffset = kingMoves[i] - moveRankOffset * 8;
@@ -202,30 +182,26 @@ std::vector<uint8_t>* King::possibleMoves(bool calculateThreats = false) {
 
 		bool checkSameColor = (target_color != m_color) || calculateThreats;
 		if (checkSameColor) {
-			moveSquares->push_back(potentialMove);
+			moves->push_back({ this, m_position, potentialMove });
 		}
 	}
-
-	return moveSquares;
 }
 
 Piece* Pawn::copy(Board* newBoard) {
 	return new Pawn(m_color, m_position, newBoard);
 }
 
-std::vector<uint8_t>* Pawn::possibleMoves(bool calculateThreats = false) { 
-	std::vector<uint8_t>* moveSquares = new std::vector<uint8_t>();
-
+void Pawn::possibleMoves(std::vector<Move>* moves, bool calculateThreats = false) {
 	// Normal move
 	int8_t pawnMoveDisplacement = m_color * 8;
 	uint8_t singleMove = m_position + pawnMoveDisplacement;
 	if (!m_board->getPiece(singleMove)) {
-		moveSquares->push_back(singleMove);
+		moves->push_back({ this, m_position, singleMove });
 		// Pawn power
 		uint8_t doubleMove = singleMove + pawnMoveDisplacement;
 		Piece* destinationOccupant = m_board->getPiece(doubleMove);
 		if (m_canDoubleMove && !destinationOccupant) {
-			moveSquares->push_back(doubleMove);
+			moves->push_back({this, m_position, doubleMove});
 		}
 	}
 
@@ -239,13 +215,11 @@ std::vector<uint8_t>* Pawn::possibleMoves(bool calculateThreats = false) {
 	if (leftFile != -1 && currentRank != promotionRank) {
 		uint8_t target =  attackRank * 8 + leftFile;
  		Piece* p = m_board->getPiece(target);
-		if(p && p->getColor() == (m_color * -1) || calculateThreats) moveSquares->push_back(target);
+		if(p && p->getColor() == (m_color * -1) || calculateThreats) moves->push_back({this, m_position, target});
 	}
 	if (rightFile != 8 && currentRank != promotionRank) {
 		uint8_t target = attackRank * 8 + rightFile;
 		Piece* p = m_board->getPiece((target));
-		if(p && p->getColor() == (m_color * -1) || calculateThreats) moveSquares->push_back(target);
+		if(p && p->getColor() == (m_color * -1) || calculateThreats) moves->push_back({this, m_position, target});
 	}
-
-	return moveSquares;
 }

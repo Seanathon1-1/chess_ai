@@ -1,6 +1,7 @@
 #pragma once
 #include "board.h"
 #include "Texture.h"
+#include "Player.h"
 #include <vector>
 
 
@@ -21,6 +22,15 @@ constexpr uint16_t WHITE_WIN	= 0x100;
 constexpr uint16_t BLACK_WIN	= 0x200;
 constexpr uint16_t STALEMATE	= 0x300;
 
+struct Move {
+	Piece* piece;
+	uint8_t source;
+	uint8_t target;
+
+	Move(Piece* p, uint8_t s, uint8_t t) : piece(p), source(s), target(t) {}
+	bool operator==(Move right) { return this->piece == right.piece && this->source == right.source && this->target == right.target; }
+};
+
 
 class Game {
 protected:
@@ -40,15 +50,15 @@ protected:
 	bool isWaitingOnPromotion() const { return gameStatus & PROMOTING; }
 	bool canCastle(Castling) const;
 	Color whoseTurn() const;
-	bool makeLegalMove(Piece*, uint8_t);
+	bool makeLegalMove(Move);
 	bool isInCheck(Color) const;
 	void updateThreatMaps();
 	void updateChecks();
-	bool move(Piece*, uint8_t);
+	bool makeMove(Move);
 	void handlePromotion();
 	bool hasLegalMove(Color);
-	std::vector<uint8_t>* getLegalPieceMoves(Piece*, bool);
-	bool check4check(Piece*, uint8_t, bool = false);
+	void getLegalPieceMoves(std::vector<Move>*, Piece*, bool = false);
+	bool check4check(Move, bool = false);
 	void checkIfGameEnded();
 
 
@@ -75,6 +85,9 @@ public:
 	Game();
 	Game(Game*);
 	~Game();
+
+	void makePlayerMove(Move);
+	void getAllLegalMoves(std::vector<Move>*, Color);
 };
 
 class GraphicalGame : public Game {

@@ -3,7 +3,6 @@
 #include "util.h"
 #include "shader.h"
 #include <string>
-#include <iostream>
 
 
 class Piece;

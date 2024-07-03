@@ -1,5 +1,5 @@
 #pragma once
-
+#include "game.h"
 #include "util.h"
 #include "board.h"
 #include "Texture.h"
@@ -26,7 +26,7 @@ public:
 	void createTexture();
 	
 	virtual Piece* copy(Board*) = 0;
-	virtual std::vector<uint8_t>* possibleMoves(bool = false) = 0;
+	virtual void possibleMoves(std::vector<Move>*, bool = false) = 0;
 	virtual char textboardSymbol() = 0;
 };
 
@@ -34,14 +34,14 @@ class Knight : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	std::vector<uint8_t>* possibleMoves(bool) override;
+	void possibleMoves(std::vector<Move>*, bool) override;
 	char textboardSymbol() override { return 'N'; }
 };
 
 class Bishop : public Piece {
 public:
 	using Piece::Piece;
-	std::vector<uint8_t>* possibleMoves(bool) override;
+	void possibleMoves(std::vector<Move>*, bool) override;
 	Piece* copy(Board*) override;
 	char textboardSymbol() override { return 'B'; }
 };
@@ -50,7 +50,7 @@ class Rook : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	std::vector<uint8_t>* possibleMoves(bool) override;
+	void possibleMoves(std::vector<Move>*, bool) override;
 	char textboardSymbol() override { return 'R'; }
 };
 
@@ -58,7 +58,7 @@ class Queen : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	std::vector<uint8_t>* possibleMoves(bool) override;
+	void possibleMoves(std::vector<Move>*, bool) override;
 	char textboardSymbol() override { return 'Q'; }
 };
 
@@ -66,7 +66,7 @@ class King : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	std::vector<uint8_t>* possibleMoves(bool) override;
+	void possibleMoves(std::vector<Move>*, bool) override;
 	char textboardSymbol() override { return 'K'; }
 };
 
@@ -75,7 +75,7 @@ class Pawn : public Piece {
 public:
 	using Piece::Piece;
 	Piece* copy(Board*) override;
-	std::vector<uint8_t>* possibleMoves(bool) override;
+	void possibleMoves(std::vector<Move>*, bool) override;
 	void losePower() { m_canDoubleMove = false; }
 	char textboardSymbol() override { return 'P'; }
 };

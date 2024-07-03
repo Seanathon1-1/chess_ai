@@ -10,6 +10,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "game.h"
 #include "shader.h"
+#include "Player.h"
 
 using namespace std;
 
@@ -57,8 +58,12 @@ int main() {
     unsigned int frameBufferObject;
     glGenFramebuffers(1, &frameBufferObject);
     
+
+
     // Let's get this game going!
     GraphicalGame game(frameBufferObject);
+    Player whitePlayer = Player(&game, white);
+    Player blackPlayer = AIPlayer(&game, black);
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 

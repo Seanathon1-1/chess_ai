@@ -38,6 +38,21 @@ Game::~Game() {
 	if (board) delete board;
 }
 
+void Game::makePlayerMove(Move move) {
+	if (makeLegalMove(move)) handlePromotion();
+}
+
+void Game::getAllLegalMoves(std::vector<Move>* moves, Color player) {
+	if (player != whoseTurn()) return;
+
+	Piece* nextPiece;
+	for (int i = 0; i < 64; i++) {
+		nextPiece = board->getPiece(i);
+		if (!nextPiece) continue;
+		getLegalPieceMoves(moves, nextPiece);
+	}
+}
+
 bool Game::canCastle(Castling whichCastle) const {
 	bool transitCheck;
 	bool currentCheck;
@@ -82,49 +97,50 @@ void Game::updateThreatMaps() {
 	black_threat_map = 0ULL;
 
 	Piece* piece;
-	std::vector<uint8_t>* squares;
 	uint64_t* threat_map;
-	for (int i = 0; i < 64; i++) {
+ 	for (int i = 0; i < 64; i++) {
+		std::vector<Move> moves;
 		piece = board->getPiece(i);
 		if (!piece) continue;
 
 		threat_map = (piece->getColor() == white) ? &white_threat_map : &black_threat_map;
-		squares = getLegalPieceMoves(piece, true);
+		getLegalPieceMoves(&moves, piece, true);
 
-		for (uint8_t sqr : *squares) {
-			setBit(threat_map, sqr);
+		for (Move move : moves) {
+			setBit(threat_map, move.target);
 		}
-		delete squares;
 	}
 }
 
-bool Game::check4check(Piece* piece, uint8_t move, bool calculateThreats) {
-	Game testingMove = Game(this);
-	Piece* testingPiece = testingMove.board->getPiece(piece->getPosition());
-	testingMove.move(testingPiece, move);
-	if (!calculateThreats) testingMove.updateChecks();
-	bool inCheck = testingMove.isInCheck(piece->getColor());
+bool Game::check4check(Move move, bool calculateThreats) {
+	Game testingGame = Game(this);
+	Piece* testingPiece = testingGame.board->getPiece(move.piece->getPosition());
+	Move testingMove = { testingPiece, move.source, move.target };
+	testingGame.makeMove(testingMove);
+	if (!calculateThreats) testingGame.updateChecks();
+	bool inCheck = testingGame.isInCheck(move.piece->getColor());
 	return inCheck;
 }
 
-std::vector<uint8_t>* Game::getLegalPieceMoves(Piece* piece, bool calculateThreats) {
-	std::vector<uint8_t>* possibleMoves = piece->possibleMoves(calculateThreats);
+void Game::getLegalPieceMoves(std::vector<Move>* moves, Piece* piece, bool calculateThreats) {
+	std::vector<Move> possibleMoves;
+	piece->possibleMoves(&possibleMoves, calculateThreats);
 	// Add castling if this is a king
 	if (instanceof<King>(piece)) {
 		if (piece->getColor() == white) {
 			if (canCastle(WHITE_SHORT)) {
-				possibleMoves->push_back(6);
+				possibleMoves.push_back({ piece, piece->getPosition(), 6 });
 			}
 			if (canCastle(WHITE_LONG)) {
-				possibleMoves->push_back(2);
+				possibleMoves.push_back({ piece, piece->getPosition(), 2 });
 			}
 		}
 		if (piece->getColor() == black) {
 			if (canCastle(BLACK_SHORT)) {
-				possibleMoves->push_back(62);
+				possibleMoves.push_back({ piece, piece->getPosition(), 62 });
 			}
 			if (canCastle(BLACK_LONG)) {
-				possibleMoves->push_back(58);
+				possibleMoves.push_back({ piece, piece->getPosition(), 58 });
 			}
 		}
 	}
@@ -134,16 +150,13 @@ std::vector<uint8_t>* Game::getLegalPieceMoves(Piece* piece, bool calculateThrea
 		uint8_t leftAttack = piece->getPosition() + (piece->getColor() * 8 - 1);
 		uint8_t rightAttack = piece->getPosition() + (piece->getColor() * 8 + 1);
 		if (leftAttack == enPassantSquare || rightAttack == enPassantSquare) {
-			possibleMoves->push_back(enPassantSquare);
+			possibleMoves.push_back({ piece, piece->getPosition(), (uint8_t)enPassantSquare });
 		}
 	}
 
-	std::vector<uint8_t>* legalMoves = new std::vector<uint8_t>();
-	for (auto move : *possibleMoves) {
-		if (!check4check(piece, move, calculateThreats)) legalMoves->push_back(move);
+	for (Move move : possibleMoves) {
+		if (!check4check(move, calculateThreats)) moves->push_back(move);
 	}
-	delete possibleMoves;
-	return legalMoves;
 }
 
 void Game::checkIfGameEnded() {
@@ -177,7 +190,9 @@ bool Game::hasLegalMove(Color c) {
 		Piece* p = board->getPiece(i % 8, i / 8);
 		if (!p) continue;
 		if (p->getColor() == c) {
-			if (getLegalPieceMoves(p, false)->size() != 0) return true;
+			std::vector<Move> moves;
+			getLegalPieceMoves(&moves, p, false);
+			if (moves.size() != 0) return true;
 		}
 	}
 	return false;
@@ -200,35 +215,33 @@ void Game::updateChecks() {
 * Description: Makes the move on the board and accordingly updates the game state, such as castling availablity,
 *              en passant opportunities, whose turn, etc.
 \*-------------------------------------------------------------------------------------------------------------*/
-bool Game::makeLegalMove(Piece* p, uint8_t target) {
-
-	uint8_t src = p->getPosition();
+bool Game::makeLegalMove(Move move) {
 	bool updatePassant = false;
 
 	// Enforce castling restrictions
-	if (instanceof<King>(p)) {
-		if (p->getColor() == white) {
+	if (instanceof<King>(move.piece)) {
+		if (move.piece->getColor() == white) {
 			gameStatus &= ~(WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE);
 		}
-		if (p->getColor() == black) {
+		if (move.piece->getColor() == black) {
 			gameStatus &= ~(BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE);
 		}
 	}
-	else if (instanceof<Rook>(p)) {
-		if (p->getColor() == white) {
-			if (src == 7) gameStatus &= ~WHITE_SHORT_CASTLE;
-			if (src == 0) gameStatus &= ~WHITE_LONG_CASTLE;
+	else if (instanceof<Rook>(move.piece)) {
+		if (move.piece->getColor() == white) {
+			if (move.source == 7) gameStatus &= ~WHITE_SHORT_CASTLE;
+			if (move.source == 0) gameStatus &= ~WHITE_LONG_CASTLE;
 		}
-		if (p->getColor() == black) {
-			if (src == 63) gameStatus &= ~BLACK_SHORT_CASTLE;
-			if (src == 56) gameStatus &= ~BLACK_LONG_CASTLE;
+		if (move.piece->getColor() == black) {
+			if (move.source == 63) gameStatus &= ~BLACK_SHORT_CASTLE;
+			if (move.source == 56) gameStatus &= ~BLACK_LONG_CASTLE;
 		}
 	}
-	else if (instanceof<Pawn>(p)) {
+	else if (instanceof<Pawn>(move.piece)) {
 		updatePassant = true;
-		((Pawn*)p)->losePower();
-		if (target == enPassantSquare) {
-			board->passantCapture(enPassantSquare - p->getColor() * 8);
+		((Pawn*)move.piece)->losePower();
+		if (move.target == enPassantSquare) {
+			board->passantCapture(enPassantSquare - move.piece->getColor() * 8);
 		}
 	}
 
@@ -236,26 +249,26 @@ bool Game::makeLegalMove(Piece* p, uint8_t target) {
 
 	// Check if en passant is available for next move
 	if (updatePassant) {
-		int dist = abs(target / 8 - src / 8);
-		int enPassantTarget = target - (p->getColor() * 8);
+		int dist = abs(move.target / 8 - move.source / 8);
+		int enPassantTarget = move.target - (move.piece->getColor() * 8);
 		if (dist == 2) enPassantSquare = enPassantTarget;
 	}
 
-	char sourceFile = 'a' + src % 8;
-	char sourceRank = '1' + src / 8;
-	char targetFile = 'a' + target % 8;
-	char targetRank = '1' + target / 8;
-	bool captureOccured = board->getPiece(target);
+	char sourceFile = 'a' + move.source % 8;
+	char sourceRank = '1' + move.source / 8;
+	char targetFile = 'a' + move.target % 8;
+	char targetRank = '1' + move.target / 8;
+	bool captureOccured = board->getPiece(move.target);
 	std::string moveString = "";
 	if (whoseTurn() == white) moveString += std::to_string(moveList.size() / 2 + 1) + ". ";
-	if (!instanceof<Pawn>(p)) moveString += p->textboardSymbol();
-	else if (captureOccured) moveString += 'a' + src % 8;
+	if (!instanceof<Pawn>(move.piece)) moveString += move.piece->textboardSymbol();
+	else if (captureOccured) moveString += 'a' + move.source % 8;
 	if (captureOccured) moveString += "x";
 	moveString += targetFile;
 	moveString += targetRank;
 	moveList.push_back(moveString);
 
-	if (move(p, target)) {
+	if (makeMove(move)) {
 		handlePromotion();
 		return true;
 	}
@@ -276,41 +289,40 @@ bool Game::makeLegalMove(Piece* p, uint8_t target) {
 	return false;
 }
 
-bool Game::move(Piece* piece, uint8_t square) {
-	if (!piece) return false;
+bool Game::makeMove(Move move) {
+	if (!move.piece) return false;
 	// Clear old spot
-	uint8_t origin = piece->getPosition();
-	board->makeMove(piece, origin, square);
+	board->makeMove(move.piece, move.source, move.target);
 
 	// Extra move on castle
-	if (instanceof<King>(piece)) {
-		uint8_t squareFile = square % 8;
-		uint8_t originFile = origin % 8;
-		if (piece->getColor() == white) {
-			whiteKing = square;
-			if (squareFile == 6 && abs(originFile - squareFile) == 2) {
+	if (instanceof<King>(move.piece)) {
+		uint8_t targetFile = move.target % 8;
+		uint8_t sourceFile = move.source % 8;
+		if (move.piece->getColor() == white) {
+			whiteKing = move.target;
+			if (targetFile == 6 && abs(sourceFile - targetFile) == 2) {
 				board->makeMove(board->getPiece(7, 0), 7, 5);
 			}
-			if (squareFile == 2 && abs(originFile - squareFile) == 2) {
+			if (targetFile == 2 && abs(sourceFile - targetFile) == 2) {
 				board->makeMove(board->getPiece(0, 0), 0, 3);
 			}
 		}
-		if (piece->getColor() == black) {
-			blackKing = square;
-			if (squareFile == 6 && abs(originFile - squareFile) == 2) {
+		if (move.piece->getColor() == black) {
+			blackKing = move.target;
+			if (targetFile == 6 && abs(sourceFile - targetFile) == 2) {
 				board->makeMove(board->getPiece(7, 7), 63, 61);
 
 			}
-			if (squareFile == 2 && abs(originFile - squareFile) == 2) {
+			if (targetFile == 2 && abs(sourceFile - targetFile) == 2) {
 				board->makeMove(board->getPiece(0, 7), 56, 59);
 			}
 		}
 	}
 
 	// Check for promotion
-	int promotion_sqr = (piece->getColor() == white) ? 7 : 0;
-	if (instanceof<Pawn>(piece) && (square / 8 == promotion_sqr)) {
-		promotionSubject = square;
+	int promotion_sqr = (move.piece->getColor() == white) ? 7 : 0;
+	if (instanceof<Pawn>(move.piece) && (move.target / 8 == promotion_sqr)) {
+		promotionSubject = move.target;
 		return 1;
 	}
 	return 0;
@@ -535,12 +547,12 @@ void GraphicalGame::render() {
 		Piece* targetPiece	= board->getPiece(rank * 8 + file);
 		Piece* movedPiece	= drop();
 		if (movedPiece) {
-			std::vector<uint8_t>* legals = getLegalPieceMoves(movedPiece, false);
-			uint8_t attempt = rank * 8 + file;
-			if (std::find(legals->begin(), legals->end(), attempt) != legals->end()) {
-				if (makeLegalMove(movedPiece, attempt)) handlePromotion();
+			std::vector<Move> legals;
+			getLegalPieceMoves(&legals, movedPiece, false);
+			Move attempt = { movedPiece, movedPiece->getPosition(), (uint8_t)(rank * 8 + file) };
+			if (std::find(legals.begin(), legals.end(), attempt) != legals.end()) {
+				if (makeLegalMove(attempt)) handlePromotion();
 			}
-			delete legals;
 		}
 	}
 	ImGui::End();
