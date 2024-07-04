@@ -13,8 +13,8 @@
 constexpr const char* HORZ_LINE = "|---|---|---|---|---|---|---|---|\n";
 
 constexpr const char* WIN_TITLE = "Chess AI";
-constexpr uint16_t WIN_WIDTH = 800;
-constexpr uint16_t WIN_HEIGHT = 600;
+constexpr uint16_t WIN_WIDTH = 1200;
+constexpr uint16_t WIN_HEIGHT = 800;
 constexpr uint32_t NULL_UINT = 0xFFFFFFFF;
 
 enum PieceType { open, pawn, knight, bishop, rook, queen, king };

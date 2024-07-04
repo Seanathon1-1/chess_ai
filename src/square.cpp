@@ -76,10 +76,10 @@ void Square::drawTexture(Shader* shader) {
 
 	// Vertex and index buffer data 
 	GLfloat vertices[] = {
-		top_left_corner.x, top_left_corner.y, top_left_corner.z - .1f, 0.f, 1.f,
-		top_right_corner.x, top_right_corner.y, top_right_corner.z - .1f, 1.f, 1.f,
-		bottom_left_corner.x, bottom_left_corner.y, bottom_left_corner.z - .1f, 0.f, 0.f,
-		bottom_right_corner.x, bottom_right_corner.y, bottom_right_corner.z - .1f, 1.f, 0.f
+		top_left_corner.x,		top_left_corner.y,		top_left_corner.z - .1f,		0.f, 1.f,
+		top_right_corner.x,		top_right_corner.y,		top_right_corner.z - .1f,		1.f, 1.f,
+		bottom_left_corner.x,	bottom_left_corner.y,	bottom_left_corner.z - .1f,		0.f, 0.f,
+		bottom_right_corner.x,	bottom_right_corner.y,	bottom_right_corner.z - .1f,	1.f, 0.f
 	};
 	GLuint indices[] = { 0, 1, 2, 1, 2, 3 };
 

@@ -62,8 +62,10 @@ int main() {
 
     // Let's get this game going!
     GraphicalGame game(frameBufferObject);
-    Player whitePlayer = Player(&game, white);
-    Player blackPlayer = AIPlayer(&game, black);
+    HumanPlayer whitePlayer = HumanPlayer(&game, white);
+    AIPlayer blackPlayer = AIPlayer(&game, black);
+    game.addPlayer(&whitePlayer, white);
+    game.addPlayer(&blackPlayer, black);
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 

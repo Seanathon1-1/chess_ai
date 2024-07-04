@@ -155,11 +155,17 @@ Piece* Queen::copy(Board* newBoard) {
 }
 
 void Queen::possibleMoves(std::vector<Move>* moves, bool calculateThreats = false) {
+	std::vector<Move> candidates;
+	
 	Bishop testBishop = Bishop(m_color, m_position, m_board);
 	Rook testRook = Rook(m_color, m_position, m_board);
 	
-	testBishop.possibleMoves(moves);
-	testRook.possibleMoves(moves);
+	testBishop.possibleMoves(&candidates);
+	testRook.possibleMoves(&candidates);
+
+	for (Move move : candidates) {
+		moves->push_back({ this, move.source, move.target });
+	}
 }
 
 Piece* King::copy(Board* newBoard) {

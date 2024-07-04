@@ -1,7 +1,6 @@
 #pragma once
 #include "board.h"
 #include "Texture.h"
-#include "Player.h"
 #include <vector>
 
 
@@ -21,6 +20,10 @@ constexpr uint16_t PLAYING		= 0x000;
 constexpr uint16_t WHITE_WIN	= 0x100;
 constexpr uint16_t BLACK_WIN	= 0x200;
 constexpr uint16_t STALEMATE	= 0x300;
+
+class Player;
+class HumanPlayer;
+class AIPlayer;
 
 struct Move {
 	Piece* piece;
@@ -50,15 +53,15 @@ protected:
 	bool isWaitingOnPromotion() const { return gameStatus & PROMOTING; }
 	bool canCastle(Castling) const;
 	Color whoseTurn() const;
-	bool makeLegalMove(Move);
-	bool isInCheck(Color) const;
-	void updateThreatMaps();
-	void updateChecks();
 	bool makeMove(Move);
+	bool makeLegalMove(Move);
+	void updateChecks();
 	void handlePromotion();
 	bool hasLegalMove(Color);
 	void getLegalPieceMoves(std::vector<Move>*, Piece*, bool = false);
+	bool isInCheck(Color) const;
 	bool check4check(Move, bool = false);
+	void updateThreatMaps();
 	void checkIfGameEnded();
 
 
@@ -86,7 +89,7 @@ public:
 	Game(Game*);
 	~Game();
 
-	void makePlayerMove(Move);
+	void makePlayerMove(Move&);
 	void getAllLegalMoves(std::vector<Move>*, Color);
 };
 
@@ -102,6 +105,9 @@ class GraphicalGame : public Game {
 	Texture* bishopPromotion = 0;
 	Piece* held = nullptr;
 
+	Player* whitePlayer;
+	Player* blackPlayer;
+
 
 	bool isHolding() { return (held != nullptr); }
 	void printBoardImage();
@@ -109,12 +115,13 @@ class GraphicalGame : public Game {
 	void grab(Piece*);
 	Piece* drop();
 	void handlePromotion();
+	void createPromotionTextures();
+	void deletePromotionTextures();
 public:
 	GraphicalGame(unsigned int);
 	~GraphicalGame();
-	void createPromotionTextures();
-	void deletePromotionTextures();
 	void render();
+	void addPlayer(Player*, Color);
 
 	template<class T>
 	void promote() {

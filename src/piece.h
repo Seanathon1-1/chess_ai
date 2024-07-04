@@ -16,7 +16,7 @@ public:
 	Piece(Color, uint8_t, Board*);
 	~Piece();
 
-	Color getColor()const { return m_color; }
+	Color getColor() const { return m_color; }
 	void select() { m_selected = true; }
 	void deselect() { m_selected = false; }
 	bool isSelected() const { return m_selected; }

@@ -1,6 +1,7 @@
 #include "game.h"
 #include "square.h"
 #include "piece.h"
+#include "Player.h"
 #include "imgui.h"
 #include "Texture.h"
 
@@ -38,7 +39,7 @@ Game::~Game() {
 	if (board) delete board;
 }
 
-void Game::makePlayerMove(Move move) {
+void Game::makePlayerMove(Move& move) {
 	if (makeLegalMove(move)) handlePromotion();
 }
 
@@ -48,7 +49,8 @@ void Game::getAllLegalMoves(std::vector<Move>* moves, Color player) {
 	Piece* nextPiece;
 	for (int i = 0; i < 64; i++) {
 		nextPiece = board->getPiece(i);
-		if (!nextPiece) continue;
+		if (!nextPiece || nextPiece->getColor() != player) continue;
+		if (nextPiece->getColor() == none) std::cerr << nextPiece->getPosition() << std::endl;
 		getLegalPieceMoves(moves, nextPiece);
 	}
 }
@@ -56,23 +58,28 @@ void Game::getAllLegalMoves(std::vector<Move>* moves, Color player) {
 bool Game::canCastle(Castling whichCastle) const {
 	bool transitCheck;
 	bool currentCheck;
+	bool spaceClear;
 	switch (whichCastle) {
 	case WHITE_SHORT:
+		spaceClear = !board->getPiece(5) && !board->getPiece(6);
 		transitCheck = XTRC_BIT(black_threat_map, whiteKing + 1);
 		currentCheck = gameStatus & WHITE_CHECK;
-		return (!currentCheck && !transitCheck);
+		return (!currentCheck && !transitCheck && spaceClear);
 	case WHITE_LONG:
+		spaceClear = !board->getPiece(1) && !board->getPiece(2) && !board->getPiece(3);
 		transitCheck = XTRC_BIT(black_threat_map, whiteKing - 1);
 		currentCheck = gameStatus & WHITE_CHECK;
-		return (!currentCheck && !transitCheck);
+		return (!currentCheck && !transitCheck && spaceClear);
 	case BLACK_SHORT:
+		spaceClear = !board->getPiece(61) && !board->getPiece(62);
 		transitCheck = XTRC_BIT(white_threat_map, blackKing + 1);
 		currentCheck = gameStatus & BLACK_CHECK;
-		return (!currentCheck && !transitCheck);
+		return (!currentCheck && !transitCheck && spaceClear);
 	case BLACK_LONG:
+		spaceClear = !board->getPiece(57) && !board->getPiece(58) && !board->getPiece(59);
 		transitCheck = XTRC_BIT(white_threat_map, blackKing - 1);
 		currentCheck = gameStatus & BLACK_CHECK;
-		return (!currentCheck && !transitCheck);
+		return (!currentCheck && !transitCheck && spaceClear);
 	}
 	return false;
 }
@@ -417,7 +424,7 @@ void GraphicalGame::printBoardImage() {
 		for (int i = 0; i < 64; i++) {
 			float left = (i % 8 - 4) * .25f;
 			float top = (float)(i / -8 + 4) * .25f;
-			topLeft = glm::vec3(left, top, 0.f);
+			topLeft = glm::vec3(left, top, 0);
 			bool isLightSquare = (i % 2) ^ (i / 8 % 2);
 			p = board->getPiece(i);
 			Square s = Square(topLeft, isLightSquare, p);
@@ -429,9 +436,10 @@ void GraphicalGame::printBoardImage() {
 		}
 		if (held) {
 			ImVec2 mPos = ImGui::GetMousePos();
-			topLeft.x = mPos.x / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 3;
+			topLeft.x = (mPos.x - (WIN_WIDTH - BOARD_SIZE)) / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 1;
 			topLeft.y = mPos.y / BOARD_SIZE * 2 + SQUARE_SIZE / 2 - 1;
 			topLeft.z = -.1f;
+			print_vec3(topLeft);
 			p = held;
 			Square s = Square(topLeft, 0, p);
 			s.drawTexture(pieceShader);
@@ -479,6 +487,7 @@ void GraphicalGame::printMoveList() {
 void GraphicalGame::render() {
 	printBoardImage();
 	printMoveList();
+	(whoseTurn() == white) ? whitePlayer->itsMyTurn() : blackPlayer->itsMyTurn();
 
 	ImGui::Begin("Gameview");
 	ImGuiIO& io = ImGui::GetIO();
@@ -556,6 +565,11 @@ void GraphicalGame::render() {
 		}
 	}
 	ImGui::End();
+}
+
+void GraphicalGame::addPlayer(Player* player, Color color) {
+	if (color == white) whitePlayer = player;
+	else blackPlayer = player;
 }
 
 
