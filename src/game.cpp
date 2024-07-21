@@ -7,11 +7,13 @@
 
 #define XTRC_BIT(map, bit) (((map) >> (bit)) & 1ULL)
 
-#define SQUARE_SIZE .25f
-#define BOARD_SIZE 400
+constexpr float SQUARE_SIZE = .25f;
+constexpr uint16_t BOARD_SIZE = 400;
+
+bool operator==(const Move left, const Move right) { return left.piece == right.piece && left.source == right.source && left.target == right.target; }
 
 // Sets a single bit in a 64-bit map to 1
-void setBit(uint64_t* map, uint8_t bit) {
+void static setBit(uint64_t* map, uint8_t bit) {
 	if (bit >= 64) {
 		return;
 	}
@@ -39,13 +41,15 @@ Game::~Game() {
 	if (board) delete board;
 }
 
+int8_t Game::getPlayStatus() const {
+	return gameStatus & PLAY_STATUS;
+}
+
 void Game::makePlayerMove(Move& move) {
 	if (makeLegalMove(move)) handlePromotion();
 }
 
 void Game::getAllLegalMoves(std::vector<Move>* moves, Color player) {
-	if (player != whoseTurn()) return;
-
 	Piece* nextPiece;
 	for (int i = 0; i < 64; i++) {
 		nextPiece = board->getPiece(i);
@@ -169,7 +173,11 @@ void Game::getLegalPieceMoves(std::vector<Move>* moves, Piece* piece, bool calcu
 void Game::checkIfGameEnded() {
 	// Look for checkmate/stalemate
 	Color nextPlayer = (whoseTurn() == white) ? black : white;
-	if (!hasLegalMove(nextPlayer)) {
+	std::vector<Move> nextPlayerMoves;
+	getAllLegalMoves(&nextPlayerMoves, nextPlayer);
+
+	// Check for when no moves are left
+	if (nextPlayerMoves.size() == 0) {
 		// Checkmate
 		if (nextPlayer == white && gameStatus & WHITE_CHECK) {
 			std::cout << "0-1" << std::endl;
@@ -185,9 +193,38 @@ void Game::checkIfGameEnded() {
 		// Stalemate
 		else {
 			std::cout << ".5-.5" << std::endl;
-			gameStatus |= STALEMATE;
+			gameStatus |= DRAW;
 			return;
 		}
+	}
+
+	// Check for insufficient material
+	uint8_t numWhiteKnights = 0;
+	uint8_t numWhiteBishops = 0;
+	uint8_t numBlackKnights = 0;
+	uint8_t numBlackBishops = 0;
+	for (int i = 0; i < 64; i++) {
+		Piece* piece = board->getPiece(i);
+		if (!piece) continue;
+		if (instanceof<Rook>(piece) || instanceof<Queen>(piece) || instanceof<Pawn>(piece)) break;
+		else if (instanceof<Bishop>(piece)) (piece->getColor() == white) ? numWhiteBishops++ : numBlackBishops++;
+		else if (instanceof<Knight>(piece)) (piece->getColor() == white) ? numWhiteKnights++ : numBlackKnights++;
+		if (numWhiteBishops >= 2 || numBlackBishops >= 2) break;
+		if (numWhiteKnights >= 3 || numBlackKnights >= 3) break;
+		if (numWhiteKnights >= 1 && numWhiteBishops >= 1) break;
+		if (numBlackKnights >= 1 && numBlackBishops >= 1) break;
+
+		// All pieces have been checked and insufficient material has been found
+		if (i == 63) {
+			gameStatus |= DRAW;
+			return;
+		}
+	}
+
+	// Draw by fifty move rule
+	if (fiftyMoveRule >= 100) {
+		gameStatus |= DRAW;
+		return;
 	}
 }
 
@@ -225,6 +262,8 @@ void Game::updateChecks() {
 bool Game::makeLegalMove(Move move) {
 	bool updatePassant = false;
 
+	fiftyMoveRule++;
+
 	// Enforce castling restrictions
 	if (instanceof<King>(move.piece)) {
 		if (move.piece->getColor() == white) {
@@ -245,6 +284,7 @@ bool Game::makeLegalMove(Move move) {
 		}
 	}
 	else if (instanceof<Pawn>(move.piece)) {
+		fiftyMoveRule = 0;
 		updatePassant = true;
 		((Pawn*)move.piece)->losePower();
 		if (move.target == enPassantSquare) {
@@ -270,7 +310,10 @@ bool Game::makeLegalMove(Move move) {
 	if (whoseTurn() == white) moveString += std::to_string(moveList.size() / 2 + 1) + ". ";
 	if (!instanceof<Pawn>(move.piece)) moveString += move.piece->textboardSymbol();
 	else if (captureOccured) moveString += 'a' + move.source % 8;
-	if (captureOccured) moveString += "x";
+	if (captureOccured) {
+		moveString += "x";
+		fiftyMoveRule = 0;
+	}
 	moveString += targetFile;
 	moveString += targetRank;
 	moveList.push_back(moveString);
@@ -439,7 +482,6 @@ void GraphicalGame::printBoardImage() {
 			topLeft.x = (mPos.x - (WIN_WIDTH - BOARD_SIZE)) / BOARD_SIZE * 2 - SQUARE_SIZE / 2 - 1;
 			topLeft.y = mPos.y / BOARD_SIZE * 2 + SQUARE_SIZE / 2 - 1;
 			topLeft.z = -.1f;
-			print_vec3(topLeft);
 			p = held;
 			Square s = Square(topLeft, 0, p);
 			s.drawTexture(pieceShader);
@@ -472,7 +514,7 @@ void GraphicalGame::printMoveList() {
 			ImGui::EndTable();
 			if ((gameStatus & PLAY_STATUS) == WHITE_WIN) ImGui::Text("1-0");
 			if ((gameStatus & PLAY_STATUS) == BLACK_WIN) ImGui::Text("0-1");
-			if ((gameStatus & PLAY_STATUS) == STALEMATE) ImGui::Text(".5-.5");
+			if ((gameStatus & PLAY_STATUS) == DRAW)		 ImGui::Text(".5-.5");
 		}
 		ImGui::EndListBox();
 	}

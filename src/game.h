@@ -19,7 +19,7 @@ constexpr uint16_t PLAY_STATUS			= 0x300;
 constexpr uint16_t PLAYING		= 0x000;
 constexpr uint16_t WHITE_WIN	= 0x100;
 constexpr uint16_t BLACK_WIN	= 0x200;
-constexpr uint16_t STALEMATE	= 0x300;
+constexpr uint16_t DRAW			= 0x300;
 
 class Player;
 class HumanPlayer;
@@ -31,7 +31,13 @@ struct Move {
 	uint8_t target;
 
 	Move(Piece* p, uint8_t s, uint8_t t) : piece(p), source(s), target(t) {}
-	bool operator==(Move right) { return this->piece == right.piece && this->source == right.source && this->target == right.target; }
+};
+extern bool operator==(const Move left, const Move right);
+
+struct MoveHasher {
+	size_t operator()(const Move& move) const {
+		return std::hash<int>()(move.source) ^ std::hash<int>()(move.target);
+	}
 };
 
 
@@ -48,6 +54,7 @@ protected:
 	uint8_t blackKing;
 	uint64_t white_threat_map = 0ULL;
 	uint64_t black_threat_map = 0ULL;
+	uint8_t fiftyMoveRule = 0;
 	int8_t enPassantSquare = -1;
 
 	bool isWaitingOnPromotion() const { return gameStatus & PROMOTING; }
@@ -89,6 +96,7 @@ public:
 	Game(Game*);
 	~Game();
 
+	int8_t getPlayStatus() const;
 	void makePlayerMove(Move&);
 	void getAllLegalMoves(std::vector<Move>*, Color);
 };
@@ -105,8 +113,8 @@ class GraphicalGame : public Game {
 	Texture* bishopPromotion = 0;
 	Piece* held = nullptr;
 
-	Player* whitePlayer;
-	Player* blackPlayer;
+	Player* whitePlayer = 0;
+	Player* blackPlayer = 0;
 
 
 	bool isHolding() { return (held != nullptr); }
