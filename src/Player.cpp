@@ -1,3 +1,3 @@
 #include "Player.h"
 
-Player::Player(Game* game, Color color) :activeGame(game), playerColor(color) {}
+Player::Player(std::shared_ptr<Game> game, Color color) :activeGame(game), playerColor(color) {}

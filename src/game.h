@@ -24,26 +24,13 @@ constexpr uint16_t DRAW			= 0x300;
 class Player;
 class HumanPlayer;
 class AIPlayer;
-
-struct Move {
-	Piece* piece;
-	uint8_t source;
-	uint8_t target;
-
-	Move(Piece* p, uint8_t s, uint8_t t) : piece(p), source(s), target(t) {}
-};
-extern bool operator==(const Move left, const Move right);
-
-struct MoveHasher {
-	size_t operator()(const Move& move) const {
-		return std::hash<int>()(move.source) ^ std::hash<int>()(move.target);
-	}
-};
+struct Move;
 
 
 class Game {
 protected:
-	Board* board = nullptr;
+	friend Move;
+	std::shared_ptr<Board> board = nullptr;
 	std::vector<std::string> moveList;
 
 	int promotionSubject = -1;
@@ -65,7 +52,7 @@ protected:
 	void updateChecks();
 	void handlePromotion();
 	bool hasLegalMove(Color);
-	void getLegalPieceMoves(std::vector<Move>*, Piece*, bool = false);
+	void getLegalPieceMoves(std::vector<Move>*, std::shared_ptr<Piece>, bool = false);
 	bool isInCheck(Color) const;
 	bool check4check(Move, bool = false);
 	void updateThreatMaps();
@@ -79,12 +66,11 @@ protected:
 			return;
 		}
 
-		Piece* toDelete = board->getPiece(promotionSubject);
-		Piece* promotedPiece = createPiece<T>(toDelete->getColor(), toDelete->getPosition(), board);
+		std::shared_ptr<Piece> toDelete = board->getPiece(promotionSubject);
+		std::shared_ptr<Piece> promotedPiece = createPiece<T>(toDelete->getColor(), toDelete->getPosition());
 		board->placePiece(promotedPiece, promotionSubject);
 		promotionSubject = -1;
 		gameStatus &= ~PROMOTING;
-		delete toDelete;
 
 		std::string promotionMove = moveList[moveList.size() - 1];
 		moveList.pop_back();
@@ -94,11 +80,12 @@ protected:
 public:
 	Game();
 	Game(Game*);
-	~Game();
+	Game(std::shared_ptr<Game>);
 
 	int8_t getPlayStatus() const;
 	void makePlayerMove(Move&);
 	void getAllLegalMoves(std::vector<Move>*, Color);
+	float getMaterialDifference();
 };
 
 class GraphicalGame : public Game {
@@ -111,7 +98,7 @@ class GraphicalGame : public Game {
 	Texture* rookPromotion = 0;
 	Texture* knightPromotion = 0;
 	Texture* bishopPromotion = 0;
-	Piece* held = nullptr;
+	std::shared_ptr<Piece> held = nullptr;
 
 	Player* whitePlayer = 0;
 	Player* blackPlayer = 0;
@@ -120,8 +107,8 @@ class GraphicalGame : public Game {
 	bool isHolding() { return (held != nullptr); }
 	void printBoardImage();
 	void printMoveList();
-	void grab(Piece*);
-	Piece* drop();
+	void grab(std::shared_ptr<Piece>);
+	std::shared_ptr<Piece> drop();
 	void handlePromotion();
 	void createPromotionTextures();
 	void deletePromotionTextures();
@@ -135,5 +122,25 @@ public:
 	void promote() {
 		Game::promote<T>();
 		deletePromotionTextures();
+	}
+};
+
+
+struct Move {
+	std::shared_ptr<Piece> piece;
+	uint8_t source;
+	uint8_t target;
+
+	Move() { Move(nullptr, 0, 0); }
+	Move(Game& game, uint8_t s, uint8_t t) : source(s), target(t) {
+		piece = game.board->getPiece(s);
+	}
+	Move(std::shared_ptr<Piece> p, uint8_t s, uint8_t t) : piece(p), source(s), target(t) {}
+};
+extern bool operator==(const Move left, const Move right);
+
+struct MoveHasher {
+	size_t operator()(const Move& move) const {
+		return std::hash<int>()(move.source) ^ std::hash<int>()(move.target);
 	}
 };

@@ -21,13 +21,13 @@ void static setBit(uint64_t* map, uint8_t bit) {
 }
 
 Game::Game() {
-	board = new Board(this);
+	board = std::make_shared<Board>(Board(this));
 	whiteKing = 4;
 	blackKing = 60;
 }
 
 Game::Game(Game* base) {
-	board = new Board(base->board);
+	board = std::make_shared<Board>(Board(base->board));
 
 	gameStatus = base->gameStatus;
 	whiteKing = base->whiteKing;
@@ -37,8 +37,15 @@ Game::Game(Game* base) {
 	enPassantSquare = base->enPassantSquare;
 }
 
-Game::~Game() {
-	if (board) delete board;
+Game::Game(std::shared_ptr<Game> base) {
+	board = std::make_shared<Board>(Board(base->board));
+
+	gameStatus = base->gameStatus;
+	whiteKing = base->whiteKing;
+	blackKing = base->blackKing;
+	white_threat_map = base->white_threat_map;
+	black_threat_map = base->black_threat_map;
+	enPassantSquare = base->enPassantSquare;
 }
 
 int8_t Game::getPlayStatus() const {
@@ -50,13 +57,29 @@ void Game::makePlayerMove(Move& move) {
 }
 
 void Game::getAllLegalMoves(std::vector<Move>* moves, Color player) {
-	Piece* nextPiece;
+	std::shared_ptr<Piece> nextPiece;
 	for (int i = 0; i < 64; i++) {
 		nextPiece = board->getPiece(i);
 		if (!nextPiece || nextPiece->getColor() != player) continue;
 		if (nextPiece->getColor() == none) std::cerr << nextPiece->getPosition() << std::endl;
 		getLegalPieceMoves(moves, nextPiece);
 	}
+}
+
+float Game::getMaterialDifference() {
+	float materialDifference = 0.f;
+	std::shared_ptr<Piece> nextPiece;
+	for (int i = 0; i < 64; i++) {
+		nextPiece = board->getPiece(i);
+		if (!nextPiece) continue;
+
+		if (instanceof<Pawn>(nextPiece))	materialDifference += 1 * nextPiece->getColor();
+		if (instanceof<Knight>(nextPiece))	materialDifference += 3 * nextPiece->getColor();
+		if (instanceof<Bishop>(nextPiece))	materialDifference += 3 * nextPiece->getColor();
+		if (instanceof<Rook>(nextPiece))	materialDifference += 5 * nextPiece->getColor();
+		if (instanceof<Queen>(nextPiece))	materialDifference += 9 * nextPiece->getColor();
+	}
+	return materialDifference;
 }
 
 bool Game::canCastle(Castling whichCastle) const {
@@ -107,7 +130,7 @@ void Game::updateThreatMaps() {
 	white_threat_map = 0ULL;
 	black_threat_map = 0ULL;
 
-	Piece* piece;
+	std::shared_ptr<Piece> piece;
 	uint64_t* threat_map;
  	for (int i = 0; i < 64; i++) {
 		std::vector<Move> moves;
@@ -124,8 +147,8 @@ void Game::updateThreatMaps() {
 }
 
 bool Game::check4check(Move move, bool calculateThreats) {
-	Game testingGame = Game(this);
-	Piece* testingPiece = testingGame.board->getPiece(move.piece->getPosition());
+	Game testingGame = Game(std::make_shared<Game>(this));
+	std::shared_ptr<Piece> testingPiece = testingGame.board->getPiece(move.piece->getPosition());
 	Move testingMove = { testingPiece, move.source, move.target };
 	testingGame.makeMove(testingMove);
 	if (!calculateThreats) testingGame.updateChecks();
@@ -133,9 +156,9 @@ bool Game::check4check(Move move, bool calculateThreats) {
 	return inCheck;
 }
 
-void Game::getLegalPieceMoves(std::vector<Move>* moves, Piece* piece, bool calculateThreats) {
+void Game::getLegalPieceMoves(std::vector<Move>* moves, std::shared_ptr<Piece> piece, bool calculateThreats) {
 	std::vector<Move> possibleMoves;
-	piece->possibleMoves(&possibleMoves, calculateThreats);
+	piece->possibleMoves(&possibleMoves, board, calculateThreats);
 	// Add castling if this is a king
 	if (instanceof<King>(piece)) {
 		if (piece->getColor() == white) {
@@ -156,8 +179,8 @@ void Game::getLegalPieceMoves(std::vector<Move>* moves, Piece* piece, bool calcu
 		}
 	}
 
-	// Add en passant if this is a pawn
 	if (instanceof<Pawn>(piece)) {
+		// Add en passant if this is a pawn
 		uint8_t leftAttack = piece->getPosition() + (piece->getColor() * 8 - 1);
 		uint8_t rightAttack = piece->getPosition() + (piece->getColor() * 8 + 1);
 		if (leftAttack == enPassantSquare || rightAttack == enPassantSquare) {
@@ -168,6 +191,7 @@ void Game::getLegalPieceMoves(std::vector<Move>* moves, Piece* piece, bool calcu
 	for (Move move : possibleMoves) {
 		if (!check4check(move, calculateThreats)) moves->push_back(move);
 	}
+	possibleMoves.clear();
 }
 
 void Game::checkIfGameEnded() {
@@ -204,7 +228,7 @@ void Game::checkIfGameEnded() {
 	uint8_t numBlackKnights = 0;
 	uint8_t numBlackBishops = 0;
 	for (int i = 0; i < 64; i++) {
-		Piece* piece = board->getPiece(i);
+		std::shared_ptr<Piece> piece = board->getPiece(i);
 		if (!piece) continue;
 		if (instanceof<Rook>(piece) || instanceof<Queen>(piece) || instanceof<Pawn>(piece)) break;
 		else if (instanceof<Bishop>(piece)) (piece->getColor() == white) ? numWhiteBishops++ : numBlackBishops++;
@@ -231,7 +255,7 @@ void Game::checkIfGameEnded() {
 
 bool Game::hasLegalMove(Color c) {
 	for (int i = 0; i < 64; i++) {
-		Piece* p = board->getPiece(i % 8, i / 8);
+		std::shared_ptr<Piece> p = board->getPiece(i % 8, i / 8);
 		if (!p) continue;
 		if (p->getColor() == c) {
 			std::vector<Move> moves;
@@ -286,7 +310,7 @@ bool Game::makeLegalMove(Move move) {
 	else if (instanceof<Pawn>(move.piece)) {
 		fiftyMoveRule = 0;
 		updatePassant = true;
-		((Pawn*)move.piece)->losePower();
+		std::static_pointer_cast<Pawn>(move.piece)->losePower();
 		if (move.target == enPassantSquare) {
 			board->passantCapture(enPassantSquare - move.piece->getColor() * 8);
 		}
@@ -305,7 +329,7 @@ bool Game::makeLegalMove(Move move) {
 	char sourceRank = '1' + move.source / 8;
 	char targetFile = 'a' + move.target % 8;
 	char targetRank = '1' + move.target / 8;
-	bool captureOccured = board->getPiece(move.target);
+	bool captureOccured = board->getPiece(move.target) != 0;
 	std::string moveString = "";
 	if (whoseTurn() == white) moveString += std::to_string(moveList.size() / 2 + 1) + ". ";
 	if (!instanceof<Pawn>(move.piece)) moveString += move.piece->textboardSymbol();
@@ -412,14 +436,16 @@ GraphicalGame::GraphicalGame(unsigned int fbo) : Game(), fbo(fbo) {
 }
 
 GraphicalGame::~GraphicalGame() {
+	if (colorShader) delete colorShader;
+	if (pieceShader) delete pieceShader;
 	deletePromotionTextures();
 }
 
 void GraphicalGame::createPromotionTextures() {
-	queenPromotion = new Texture(&Queen(whoseTurn(), 0, 0));
-	rookPromotion = new Texture(&Rook(whoseTurn(), 0, 0));
-	knightPromotion = new Texture(&Knight(whoseTurn(), 0, 0));
-	bishopPromotion = new Texture(&Bishop(whoseTurn(), 0, 0));
+	queenPromotion = new Texture(&Queen(whoseTurn(), 0));
+	rookPromotion = new Texture(&Rook(whoseTurn(), 0));
+	knightPromotion = new Texture(&Knight(whoseTurn(), 0));
+	bishopPromotion = new Texture(&Bishop(whoseTurn(), 0));
 }
 
 void GraphicalGame::deletePromotionTextures() {
@@ -431,13 +457,13 @@ void GraphicalGame::deletePromotionTextures() {
 	queenPromotion = rookPromotion = knightPromotion = bishopPromotion = 0;
 }
 
-void GraphicalGame::grab(Piece* p) {
+void GraphicalGame::grab(std::shared_ptr<Piece> p) {
 	held = p;
 	p->select();
 }
 
-Piece* GraphicalGame::drop() {
-	Piece* returnPiece = held;
+std::shared_ptr<Piece> GraphicalGame::drop() {
+	std::shared_ptr<Piece> returnPiece = held;
 	held->deselect();
 	held = nullptr;
 	return returnPiece;
@@ -463,7 +489,7 @@ void GraphicalGame::printBoardImage() {
 #endif
 	if (ImGui::Begin("Gameview", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar)) {		//ImGui::SetCursorPos({0, 0})
 		glm::vec3 topLeft;
-		Piece* p;
+		std::shared_ptr<Piece> p;
 		for (int i = 0; i < 64; i++) {
 			float left = (i % 8 - 4) * .25f;
 			float top = (float)(i / -8 + 4) * .25f;
@@ -529,7 +555,6 @@ void GraphicalGame::printMoveList() {
 void GraphicalGame::render() {
 	printBoardImage();
 	printMoveList();
-	(whoseTurn() == white) ? whitePlayer->itsMyTurn() : blackPlayer->itsMyTurn();
 
 	ImGui::Begin("Gameview");
 	ImGuiIO& io = ImGui::GetIO();
@@ -538,6 +563,8 @@ void GraphicalGame::render() {
 		ImGui::End();
 		return;
 	}
+	
+	(whoseTurn() == white) ? whitePlayer->itsMyTurn() : blackPlayer->itsMyTurn();
 
 	if (isWaitingOnPromotion()) {
 		PieceType promotionPiece = open;
@@ -583,7 +610,7 @@ void GraphicalGame::render() {
 		ImVec2 mPos  = { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
 		char file    = (char)(mPos.x / (wSize.x / 8));
 		char rank    = (char)(8 - mPos.y / (wSize.y / 8));
-		Piece* p     = board->getPiece(rank * 8 + file);
+		std::shared_ptr<Piece> p     = board->getPiece(rank * 8 + file);
 		if (p && p->getColor() == whoseTurn() && !isWaitingOnPromotion()) {
 			grab(p);
 		}
@@ -595,8 +622,8 @@ void GraphicalGame::render() {
 		ImVec2 mPos			= { io.MousePos.x - wPos.x, io.MousePos.y - wPos.y };
 		char file			= (char)(mPos.x / (wSize.x / 8));
 		char rank			= (char)(8 - mPos.y / (wSize.y / 8));
-		Piece* targetPiece	= board->getPiece(rank * 8 + file);
-		Piece* movedPiece	= drop();
+		std::shared_ptr<Piece> targetPiece	= board->getPiece(rank * 8 + file);
+		std::shared_ptr<Piece> movedPiece	= drop();
 		if (movedPiece) {
 			std::vector<Move> legals;
 			getLegalPieceMoves(&legals, movedPiece, false);

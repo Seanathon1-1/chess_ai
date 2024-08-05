@@ -64,11 +64,11 @@ int main() {
 
 
     // Let's get this game going!
-    GraphicalGame game(frameBufferObject);
-    HumanPlayer whitePlayer = HumanPlayer(&game, white);
-    AIPlayer blackPlayer = AIPlayer(&game, black);
-    game.addPlayer(&whitePlayer, white);
-    game.addPlayer(&blackPlayer, black);
+    std::shared_ptr<GraphicalGame> game = std::make_shared<GraphicalGame>(frameBufferObject);
+    HumanPlayer whitePlayer = HumanPlayer(game, white);
+    AIPlayer blackPlayer = AIPlayer(game, black);
+    game->addPlayer(&whitePlayer, white);
+    game->addPlayer(&blackPlayer, black);
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -79,7 +79,7 @@ int main() {
 
         // Clear the screen and render our game
         glClearColor(0.f, 0.f, 0.f, 1.f);
-        game.render();
+        game->render();
 
         ImGui::ShowDemoWindow();
 

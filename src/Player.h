@@ -3,10 +3,10 @@
 
 class Player {
 protected:
-	Game* activeGame;
+	std::shared_ptr<Game> activeGame;
 	Color playerColor;
 public:
-	Player(Game*, Color);
+	Player(std::shared_ptr<Game>, Color);
 	virtual void itsMyTurn() = 0;
 };
 
