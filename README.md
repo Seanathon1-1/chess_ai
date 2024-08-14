@@ -8,14 +8,19 @@ This is an ongoing chess AI project designed to play standard chess against a hu
 - **Evaluation Function**: Evaluates the board position to assess which player has the advantage.
 - **Minimax Algorithm**: Searches the game tree to find the best move.
 
-## Getting Started
+## Building and Running
 
-### Setting Up the Project
+To download the project, use the following command to ensure the submodules are downloaded as well.
 
+```
+git clone https://github.com/siofra-mc/chess_ai.git --recursive
+```
 
-### Running the Chess AI
+The project includes a copy of Premake 5, which is used for establishing the build environment. To use with Visual Studio, run Premake with the appropriate action for your version of visual studio. The example below is for Visual Studio 2022. Once premake completes, open the .sln file that generates and run the program.
 
-
+```
+premake5 vs2022
+```
 
 ## License
 
